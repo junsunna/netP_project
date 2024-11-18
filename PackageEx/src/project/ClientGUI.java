@@ -3,6 +3,8 @@ package project;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,10 +33,12 @@ import javax.swing.text.DefaultStyledDocument;
 
 public class ClientGUI extends JFrame {
 //	private JTextArea t_display;
-	private JLabel backgroundLabel, back_cake, back_choice;
+	private Bear bear;
+	
+	private JLabel backgroundLabel, back_cake, back_choice, back_base;
 	private JTextField t_input;
 	private JTextPane t_display;
-	private ImageIcon i_cake, i_choice;
+	private ImageIcon i_cake, i_choice, i_startB, i_base;
 	
 	private JButton b_gameStart, b_sound;
 	private DefaultStyledDocument document;
@@ -72,7 +76,7 @@ public class ClientGUI extends JFrame {
 	}
 	
 	private void createDisplayPanel() {
-		ImageIcon i_startB = new ImageIcon("images/background/b_start.png");
+		i_startB = new ImageIcon("images/background/b_start.png");
 		backgroundLabel = new JLabel(i_startB);
         backgroundLabel.setBounds(0, 0, i_startB.getIconWidth(), i_startB.getIconHeight());
         backgroundLabel.setLayout(null);
@@ -157,18 +161,54 @@ public class ClientGUI extends JFrame {
 				backgroundLabel.repaint();
 				
 				b_bear.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-							try {
-							connectToServer();
-	//						sendUserID();
-						} catch (UnknownHostException e1) {
-							printDisplay("서버 주소와 포트번호를 확인하세요: " + e1.getMessage());
-						} catch (IOException e1) {
-							printDisplay("서버와의 연결 오류: " + e1.getMessage());
-							return;
-						}
-					}
+//					@Override
+//					public void actionPerformed(ActionEvent e) {
+//							try {
+//							connectToServer();
+//	//						sendUserID();
+//						} catch (UnknownHostException e1) {
+//							printDisplay("서버 주소와 포트번호를 확인하세요: " + e1.getMessage());
+//						} catch (IOException e1) {
+//							printDisplay("서버와의 연결 오류: " + e1.getMessage());
+//							return;
+//						}
+//					}
+				    @Override
+				    public void actionPerformed(ActionEvent e) {
+				        // Bear 객체 생성
+				        Bear bear = new Bear();
+				        
+				        // 시작 화면 삭제
+				        remove(backgroundLabel);
+				        // 플레이 화면 생성
+						i_base = new ImageIcon("images/background/b_base.png");
+						back_base = new JLabel(i_base);
+						back_base.setBounds(0, 0, i_base.getIconWidth(), i_base.getIconHeight());
+						back_base.setLayout(null);
+						back_base.add(bear.getCharacter());
+						add(back_base);
+				        
+						
+		                back_base.repaint();
+
+				        // 키 이벤트 처리
+				        addKeyListener(new KeyAdapter() {
+				            @Override
+				            public void keyPressed(KeyEvent e) {
+				                int keyCode = e.getKeyCode();
+				                if (keyCode == KeyEvent.VK_LEFT) {
+				                    bear.move(Bear.LEFT); // 왼쪽 이동
+				                } else if (keyCode == KeyEvent.VK_RIGHT) {
+				                    bear.move(Bear.RIGHT); // 오른쪽 이동
+				                }
+				                back_base.repaint();
+				            }
+				        });
+
+				        // 포커스 요청
+				        requestFocusInWindow();
+				    }
+
 				});
 				b_rabbit.addActionListener(new ActionListener() {
 					@Override
