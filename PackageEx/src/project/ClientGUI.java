@@ -28,6 +28,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.Timer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 
@@ -39,6 +40,10 @@ public class ClientGUI extends JFrame {
 	private JTextField t_input;
 	private JTextPane t_display;
 	private ImageIcon i_cake, i_choice, i_startB, i_base;
+	
+	private Timer idleTimer;
+	private boolean leftKeyPressed = false;
+	private boolean rightKeyPressed = false;
 	
 	private JButton b_gameStart, b_sound;
 	private DefaultStyledDocument document;
@@ -58,8 +63,22 @@ public class ClientGUI extends JFrame {
 		this.serverPort = serverPort;
 
 		setLayout(null);
-		
 		buildGUI();
+		
+        // Idle 상태를 지속적으로 호출하는 타이머 (100ms마다 호출)
+        idleTimer = new Timer(100, e -> {
+            if (!bear.getIsActive()) {
+	        	if (!leftKeyPressed) {
+	                bear.move(Bear.LEFT_IDLE); // IDLE 상태 유지
+	                back_base.repaint();
+	            }
+	            if (!rightKeyPressed)
+	            {
+	                bear.move(Bear.RIGHT_IDLE); // IDLE 상태 유지
+	                back_base.repaint();
+	            }  
+            }
+        });
 		
 		setSize(715, 738);
 		setLocation(100,300);
@@ -176,7 +195,8 @@ public class ClientGUI extends JFrame {
 				    @Override
 				    public void actionPerformed(ActionEvent e) {
 				        // Bear 객체 생성
-				        Bear bear = new Bear();
+				        bear = new Bear();
+//				        bear.move(Bear.RIGHT_IDLE); 
 				        
 				        // 시작 화면 삭제
 				        remove(backgroundLabel);
@@ -187,19 +207,57 @@ public class ClientGUI extends JFrame {
 						back_base.setLayout(null);
 						back_base.add(bear.getCharacter());
 						add(back_base);
-				        
 						
 		                back_base.repaint();
 
+		                // 타이머 시작
+		                if (!idleTimer.isRunning()) {
+		                    idleTimer.start();
+		                }
+		                
 				        // 키 이벤트 처리
 				        addKeyListener(new KeyAdapter() {
 				            @Override
 				            public void keyPressed(KeyEvent e) {
 				                int keyCode = e.getKeyCode();
+				                switch (keyCode) {
+				                case KeyEvent.VK_LEFT :
+				                	leftKeyPressed = false;
+				                	rightKeyPressed = true;
+				                    bear.move(Bear.LEFT_MOVE); // 왼쪽 이동
+				                    break;
+				                case KeyEvent.VK_RIGHT :
+					            	leftKeyPressed = true;
+					            	rightKeyPressed = false;
+				                	bear.move(Bear.RIGHT_MOVE); // 오른쪽 이동
+				                	break;
+				                case KeyEvent.VK_SPACE:
+				                    // 점프 방향 결정
+				                	if (!bear.getIsActive()) {
+					                    if (!leftKeyPressed) {
+					                        bear.move(Bear.LEFT_JUMP); // 왼쪽 점프
+					                    } else if (!rightKeyPressed) {
+					                        bear.move(Bear.RIGHT_JUMP); // 오른쪽 점프
+					                    }
+				                	}
+				                    break;
+				                }
+				                
+
+				                back_base.repaint();
+				            }
+				            @Override
+				            public void keyReleased(KeyEvent e) {
+				                int keyCode = e.getKeyCode();
+				                bear.initIndex();
 				                if (keyCode == KeyEvent.VK_LEFT) {
-				                    bear.move(Bear.LEFT); // 왼쪽 이동
+				                	leftKeyPressed = false;
+				                	rightKeyPressed = true;
+				                    bear.move(Bear.LEFT_IDLE); // 왼쪽 멈춤 상태로 전환
 				                } else if (keyCode == KeyEvent.VK_RIGHT) {
-				                    bear.move(Bear.RIGHT); // 오른쪽 이동
+					            	leftKeyPressed = true;
+					            	rightKeyPressed = false;
+				                    bear.move(Bear.RIGHT_IDLE); // 오른쪽 멈춤 상태로 전환
 				                }
 				                back_base.repaint();
 				            }
