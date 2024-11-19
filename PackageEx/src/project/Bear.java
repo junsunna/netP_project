@@ -16,7 +16,8 @@ public class Bear {
     public static final String LEFT_IDLE = "LEFT_IDLE";
     public static final String RIGHT_IDLE = "RIGHT_IDLE";
     public static final String basePath = "images/move/bear";
-
+    public static final String LEFT_AIR_MOVE = "LEFT_AIR_MOVE";
+    public static final String RIGHT_AIR_MOVE = "RIGHT_AIR_MOVE";
     private Point position;
     
     private JLabel character;
@@ -182,7 +183,7 @@ public class Bear {
             	isActive = true;
                 for (int i = 0; i < i_leftJump.size(); i++) {
                     position.y -= 20; // 점프 상승
-                    move(LEFT_MOVE);
+//                    move(LEFT_MOVE);
                     updateCharacterPosition();
                     leftJumpIndex = i % i_leftJump.size();
                     character.setIcon(i_leftJump.get(leftJumpIndex));
@@ -196,10 +197,10 @@ public class Bear {
                 try {
                 	for (int i = 0 ; i < 5; i++) {
                 		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
-                		if (position.x > 0) {
-                			position.x -= 8;
-                            updateCharacterPosition();
-                		}
+//                		if (position.x > 0) {
+//                			position.x -= 8;
+//                            updateCharacterPosition();
+//                		}
                 	}
                     
                 } catch (InterruptedException ex) {
@@ -208,7 +209,7 @@ public class Bear {
                 for (int i = i_leftJump.size() - 1; i >= 0; i--) {
                     position.y += 20; // 점프 하강
                    
-                    	move(LEFT_MOVE);
+//                    	move(LEFT_MOVE);
                     
                     updateCharacterPosition();
                     leftJumpIndex = i % i_leftJump.size();
@@ -228,7 +229,7 @@ public class Bear {
             	isActive = true;
                 for (int i = 0; i < i_rightJump.size(); i++) {
                     position.y -= 20; // 점프 상승
-                    move(RIGHT_MOVE);
+//                    move(RIGHT_MOVE);
                     updateCharacterPosition();
                     rightJumpIndex = i % i_rightJump.size();
                     character.setIcon(i_rightJump.get(rightJumpIndex));
@@ -242,17 +243,17 @@ public class Bear {
                 try {
                 	for (int i = 0 ; i < 5; i++) {
                 		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
-                		if (position.x > 0) {
-                			position.x += 8;
-                            updateCharacterPosition();
-                		}
+//                		if (position.x > 0) {
+//                			position.x += 8;
+//                            updateCharacterPosition();
+//                		}
                 	}
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
                 for (int i = i_rightJump.size() - 1; i >= 0; i--) {
                     position.y += 20; // 점프 하강
-                    	move(RIGHT_MOVE);
+//                    	move(RIGHT_MOVE);
                     
                     updateCharacterPosition();
                     rightJumpIndex = i % i_rightJump.size();
@@ -277,6 +278,32 @@ public class Bear {
             updateCharacterPosition();
             rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
             character.setIcon(i_rightIdle.get(rightIdleIndex));
+    		break;
+    	case LEFT_AIR_MOVE:
+            try {
+            	for (int i = 0 ; i < 5; i++) {
+            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+            		if (position.x > 0) {
+            			position.x -= 8;
+                        updateCharacterPosition();
+            		}
+            	}
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+    		break;
+    	case RIGHT_AIR_MOVE:
+            try {
+            	for (int i = 0 ; i < 5; i++) {
+            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+            		if (position.x > 0) {
+            			position.x += 8;
+                        updateCharacterPosition();
+            		}
+            	}
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
     		break;
     	}
     }

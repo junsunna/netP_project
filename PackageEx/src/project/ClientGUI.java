@@ -22,12 +22,17 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Vector;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.Timer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
@@ -68,11 +73,11 @@ public class ClientGUI extends JFrame {
         // Idle 상태를 지속적으로 호출하는 타이머 (100ms마다 호출)
         idleTimer = new Timer(100, e -> {
             if (!bear.getIsActive()) {
-	        	if (!leftKeyPressed) {
+	        	if (leftKeyPressed) {
 	                bear.move(Bear.LEFT_IDLE); // IDLE 상태 유지
 	                back_base.repaint();
 	            }
-	            if (!rightKeyPressed)
+	            if (rightKeyPressed)
 	            {
 	                bear.move(Bear.RIGHT_IDLE); // IDLE 상태 유지
 	                back_base.repaint();
@@ -209,59 +214,75 @@ public class ClientGUI extends JFrame {
 						add(back_base);
 						
 		                back_base.repaint();
+		                configureKeyBindings();
 
 		                // 타이머 시작
 		                if (!idleTimer.isRunning()) {
 		                    idleTimer.start();
 		                }
 		                
-				        // 키 이벤트 처리
-				        addKeyListener(new KeyAdapter() {
-				            @Override
-				            public void keyPressed(KeyEvent e) {
-				                int keyCode = e.getKeyCode();
-				                switch (keyCode) {
-				                case KeyEvent.VK_LEFT :
-				                	leftKeyPressed = false;
-				                	rightKeyPressed = true;
-				                    bear.move(Bear.LEFT_MOVE); // 왼쪽 이동
-				                    break;
-				                case KeyEvent.VK_RIGHT :
-					            	leftKeyPressed = true;
-					            	rightKeyPressed = false;
-				                	bear.move(Bear.RIGHT_MOVE); // 오른쪽 이동
-				                	break;
-				                case KeyEvent.VK_SPACE:
-				                    // 점프 방향 결정
-				                	if (!bear.getIsActive()) {
-					                    if (!leftKeyPressed) {
-					                        bear.move(Bear.LEFT_JUMP); // 왼쪽 점프
-					                    } else if (!rightKeyPressed) {
-					                        bear.move(Bear.RIGHT_JUMP); // 오른쪽 점프
-					                    }
-				                	}
-				                    break;
-				                }
-				                
-
-				                back_base.repaint();
-				            }
-				            @Override
-				            public void keyReleased(KeyEvent e) {
-				                int keyCode = e.getKeyCode();
-				                bear.initIndex();
-				                if (keyCode == KeyEvent.VK_LEFT) {
-				                	leftKeyPressed = false;
-				                	rightKeyPressed = true;
-				                    bear.move(Bear.LEFT_IDLE); // 왼쪽 멈춤 상태로 전환
-				                } else if (keyCode == KeyEvent.VK_RIGHT) {
-					            	leftKeyPressed = true;
-					            	rightKeyPressed = false;
-				                    bear.move(Bear.RIGHT_IDLE); // 오른쪽 멈춤 상태로 전환
-				                }
-				                back_base.repaint();
-				            }
-				        });
+//				        // 키 이벤트 처리
+//				        addKeyListener(new KeyAdapter() {
+//				            @Override
+//				            public void keyPressed(KeyEvent e) {
+//				                int keyCode = e.getKeyCode();
+//				                if (!bear.getIsActive()) {
+//				                	switch (keyCode) {
+//				                	 case KeyEvent.VK_LEFT :
+//						                	leftKeyPressed = false;
+//						                	rightKeyPressed = true;
+//						                    bear.move(Bear.LEFT_MOVE); // 왼쪽 이동
+//						                    break;
+//						                case KeyEvent.VK_RIGHT :
+//							            	leftKeyPressed = true;
+//							            	rightKeyPressed = false;
+//						                	bear.move(Bear.RIGHT_MOVE); // 오른쪽 이동
+//						                	break;
+//						                case KeyEvent.VK_SPACE:
+//						                    // 점프 방향 결정
+//						                	if (!bear.getIsActive()) {
+//							                    if (!leftKeyPressed) {
+//							                        bear.move(Bear.LEFT_JUMP); // 왼쪽 점프
+//							                    } else if (!rightKeyPressed) {
+//							                        bear.move(Bear.RIGHT_JUMP); // 오른쪽 점프
+//							                    }
+//						                	}
+//						                    break;
+//				                	}
+//				                } else {
+//					                switch (keyCode) {
+//					                case KeyEvent.VK_LEFT :
+//					                	leftKeyPressed = false;
+//					                	rightKeyPressed = true;
+//					                    bear.move(Bear.LEFT_AIR_MOVE); // 왼쪽 이동
+//					                    break;
+//					                case KeyEvent.VK_RIGHT :
+//						            	leftKeyPressed = true;
+//						            	rightKeyPressed = false;
+//					                	bear.move(Bear.RIGHT_AIR_MOVE); // 오른쪽 이동
+//					                	break;
+//					                }
+//				                }
+//				                
+//
+//				                back_base.repaint();
+//				            }
+//				            @Override
+//				            public void keyReleased(KeyEvent e) {
+//				                int keyCode = e.getKeyCode();
+//				                bear.initIndex();
+//				                if (keyCode == KeyEvent.VK_LEFT) {
+//				                	leftKeyPressed = false;
+//				                	rightKeyPressed = true;
+//				                    bear.move(Bear.LEFT_IDLE); // 왼쪽 멈춤 상태로 전환
+//				                } else if (keyCode == KeyEvent.VK_RIGHT) {
+//					            	leftKeyPressed = true;
+//					            	rightKeyPressed = false;
+//				                    bear.move(Bear.RIGHT_IDLE); // 오른쪽 멈춤 상태로 전환
+//				                }
+//				                back_base.repaint();
+//				            }
+//				        });
 
 				        // 포커스 요청
 				        requestFocusInWindow();
@@ -283,7 +304,7 @@ public class ClientGUI extends JFrame {
 					}
 				});
 			}
-			
+		});
 //			@Override
 //			public void actionPerformed(ActionEvent e) {
 //				try {
@@ -298,13 +319,85 @@ public class ClientGUI extends JFrame {
 //				
 //				b_gameStart.setEnabled(false);
 //			}
-		});
 		b_sound.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("사운드 설정을 변경합니다!");
             }
         });
+	}
+	
+	// 키 바인딩 등록 메서드
+	private void configureKeyBindings() {
+	    // InputMap과 ActionMap 가져오기
+	    InputMap inputMap = back_base.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+	    ActionMap actionMap = back_base.getActionMap();
+
+	    // 왼쪽 키 눌림
+	    inputMap.put(KeyStroke.getKeyStroke("pressed LEFT"), "leftPressed");
+	    actionMap.put("leftPressed", new AbstractAction() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+	            leftKeyPressed = true;
+	            rightKeyPressed = false;
+	            bear.move(Bear.LEFT_MOVE);
+	            back_base.repaint();
+	        }
+	    });
+
+	    // 오른쪽 키 눌림
+	    inputMap.put(KeyStroke.getKeyStroke("pressed RIGHT"), "rightPressed");
+	    actionMap.put("rightPressed", new AbstractAction() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+	            rightKeyPressed = true;
+	            leftKeyPressed = false;
+	            bear.move(Bear.RIGHT_MOVE);
+	            back_base.repaint();
+	        }
+	    });
+
+	    // 점프 키 눌림 (스페이스)
+	    inputMap.put(KeyStroke.getKeyStroke("pressed SPACE"), "spacePressed");
+	    actionMap.put("spacePressed", new AbstractAction() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+	            if (!bear.getIsActive()) {
+	                if (leftKeyPressed) {
+	                    bear.move(Bear.LEFT_JUMP);
+	                } else if (rightKeyPressed) {
+	                    bear.move(Bear.RIGHT_JUMP);
+	                }
+	            }
+	            back_base.repaint();
+	        }
+	    });
+
+	    // 왼쪽 키 뗌
+	    inputMap.put(KeyStroke.getKeyStroke("released LEFT"), "leftReleased");
+	    actionMap.put("leftReleased", new AbstractAction() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+	            leftKeyPressed = false;
+	            if (!bear.getIsActive()) {
+	                bear.move(Bear.LEFT_IDLE);
+	            }
+	            back_base.repaint();
+	        }
+	    });
+
+	    // 오른쪽 키 뗌
+	    inputMap.put(KeyStroke.getKeyStroke("released RIGHT"), "rightReleased");
+	    actionMap.put("rightReleased", new AbstractAction() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+	            rightKeyPressed = false;
+	            if (!bear.getIsActive()) {
+	                bear.move(Bear.RIGHT_IDLE);
+	            }
+	            back_base.repaint();
+	        }
+	    });
 	}
 
 	private void connectToServer() throws UnknownHostException, IOException {
