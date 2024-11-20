@@ -70,21 +70,6 @@ public class ClientGUI extends JFrame {
 		setLayout(null);
 		buildGUI();
 		
-        // Idle 상태를 지속적으로 호출하는 타이머 (100ms마다 호출)
-//        idleTimer = new Timer(100, e -> {
-//            if (!bear.getIsActive()) {
-//	        	if (leftKeyPressed) {
-//	                bear.move(Bear.LEFT_IDLE); // IDLE 상태 유지
-//	                back_base.repaint();
-//	            }
-//	            if (rightKeyPressed)
-//	            {
-//	                bear.move(Bear.RIGHT_IDLE); // IDLE 상태 유지
-//	                back_base.repaint();
-//	            }  
-//            }
-//        });
-		
 		setSize(715, 738);
 		setLocation(100,300);
 
@@ -201,7 +186,6 @@ public class ClientGUI extends JFrame {
 				    public void actionPerformed(ActionEvent e) {
 				        // Bear 객체 생성
 				        bear = new Bear();
-//				        bear.move(Bear.RIGHT_IDLE); 
 				        
 				        // 시작 화면 삭제
 				        remove(backgroundLabel);
@@ -214,18 +198,13 @@ public class ClientGUI extends JFrame {
 						add(back_base);
 						
 		                back_base.repaint();
-
-		                // 타이머 시작
-//		                if (!idleTimer.isRunning()) {
-//		                    idleTimer.start();
-//		                }
 		                
 				        // 키 이벤트 처리
 				        addKeyListener(new KeyAdapter() {
 				            @Override
 				            public void keyPressed(KeyEvent e) {
 				                int keyCode = e.getKeyCode();
-				                
+				                bear.idle = false;
 				                	switch (keyCode) {
 				                	 case KeyEvent.VK_LEFT :
 						                    bear.left();
@@ -242,17 +221,14 @@ public class ClientGUI extends JFrame {
 				            @Override
 				            public void keyReleased(KeyEvent e) {
 				                int keyCode = e.getKeyCode();
+				                bear.idle = true;
 				                bear.initIndex();
 				                if (keyCode == KeyEvent.VK_LEFT) {
 				                	bear.left = false;
-//				                	leftKeyPressed = true;
-//				                	rightKeyPressed = false;
-//				                    bear.move(Bear.LEFT_IDLE); // 왼쪽 멈춤 상태로 전환
+				                	bear.idle();
 				                } else if (keyCode == KeyEvent.VK_RIGHT) {
 				                	bear.right = false;
-//					            	leftKeyPressed = false;
-//					            	rightKeyPressed = true;
-//				                    bear.move(Bear.RIGHT_IDLE); // 오른쪽 멈춤 상태로 전환
+				                	bear.idle();
 				                }
 				                back_base.repaint();
 				            }
