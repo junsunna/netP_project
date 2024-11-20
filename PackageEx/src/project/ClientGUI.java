@@ -40,15 +40,13 @@ import javax.swing.text.DefaultStyledDocument;
 public class ClientGUI extends JFrame {
 //	private JTextArea t_display;
 	private Bear bear;
+	private Rabbit rabbit;
+	private MainMap mainMap;
 	
 	private JLabel backgroundLabel, back_cake, back_choice, back_base;
 	private JTextField t_input;
 	private JTextPane t_display;
 	private ImageIcon i_cake, i_choice, i_startB, i_base;
-	
-	private Timer idleTimer;
-	private boolean leftKeyPressed = false;
-	private boolean rightKeyPressed = false;
 	
 	private JButton b_gameStart, b_sound;
 	private DefaultStyledDocument document;
@@ -71,7 +69,7 @@ public class ClientGUI extends JFrame {
 		buildGUI();
 		
 		setSize(715, 738);
-		setLocation(100,300);
+		setLocation(500,150);
 
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -189,14 +187,14 @@ public class ClientGUI extends JFrame {
 				        // 시작 화면 삭제
 				        remove(backgroundLabel);
 				        // 플레이 화면 생성
-						i_base = new ImageIcon("images/background/b_base.png");
-						back_base = new JLabel(i_base);
-						back_base.setBounds(0, 0, i_base.getIconWidth(), i_base.getIconHeight());
-						back_base.setLayout(null);
-						back_base.add(bear.getCharacter());
-						add(back_base);
+				        mainMap = new MainMap();
+				        JLabel m_map = mainMap.createTile();
+				        m_map.add(bear.getCharacter());
+				        add(m_map);
 						
-		                back_base.repaint();
+						setSize(1100, 738);
+				        revalidate();
+				        repaint();
 		                
 				        // 키 이벤트 처리
 				        addKeyListener(new KeyAdapter() {
@@ -205,7 +203,7 @@ public class ClientGUI extends JFrame {
 				                int keyCode = e.getKeyCode();
 				                bear.idle = false;
 				                	switch (keyCode) {
-				                	 case KeyEvent.VK_LEFT :
+				                	 	case KeyEvent.VK_LEFT :
 						                    bear.left();
 						                    break;
 						                case KeyEvent.VK_RIGHT :
@@ -214,8 +212,11 @@ public class ClientGUI extends JFrame {
 						                case KeyEvent.VK_SPACE:
 						                    bear.up();
 						                    break;
+						                case KeyEvent.VK_A:
+						                    bear.dead();
+						                    break;
 				                	}
-				                back_base.repaint();
+				                	m_map.repaint();
 				            }
 				            @Override
 				            public void keyReleased(KeyEvent e) {
@@ -229,7 +230,7 @@ public class ClientGUI extends JFrame {
 				                	bear.right = false;
 				                	bear.idle();
 				                } 
-				                back_base.repaint();
+				                m_map.repaint();
 				            }
 				        });
 
@@ -239,18 +240,64 @@ public class ClientGUI extends JFrame {
 
 				});
 				b_rabbit.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-							try {
-							connectToServer();
-	//						sendUserID();
-						} catch (UnknownHostException e1) {
-							printDisplay("서버 주소와 포트번호를 확인하세요: " + e1.getMessage());
-						} catch (IOException e1) {
-							printDisplay("서버와의 연결 오류: " + e1.getMessage());
-							return;
-						}
-					}
+				    @Override
+				    public void actionPerformed(ActionEvent e) {
+				        // Bear 객체 생성
+				    	rabbit = new Rabbit();
+				        
+				        // 시작 화면 삭제
+				        remove(backgroundLabel);
+				        // 플레이 화면 생성
+				        mainMap = new MainMap();
+				        JLabel m_map = mainMap.createTile();
+				        m_map.add(rabbit.getCharacter());
+				        add(m_map);
+				        
+						setSize(1100, 738);				        
+				        revalidate();
+				        repaint();
+		                
+				        // 키 이벤트 처리
+				        addKeyListener(new KeyAdapter() {
+				            @Override
+				            public void keyPressed(KeyEvent e) {
+				                int keyCode = e.getKeyCode();
+				                rabbit.idle = false;
+				                	switch (keyCode) {
+				                	 	case KeyEvent.VK_LEFT :
+				                	 		rabbit.left();
+						                    break;
+						                case KeyEvent.VK_RIGHT :
+						                	rabbit.right();
+						                	break;
+						                case KeyEvent.VK_SPACE:
+						                	rabbit.up();
+						                    break;
+						                case KeyEvent.VK_A:
+						                	rabbit.dead();
+						                    break;
+				                	}
+				                	m_map.repaint();
+				            }
+				            @Override
+				            public void keyReleased(KeyEvent e) {
+				                int keyCode = e.getKeyCode();
+				                rabbit.idle = true;
+				                rabbit.initIndex();
+				                if (keyCode == KeyEvent.VK_LEFT) {
+				                	rabbit.left = false;
+				                	rabbit.idle();
+				                } else if (keyCode == KeyEvent.VK_RIGHT) {
+				                	rabbit.right = false;
+				                	rabbit.idle();
+				                } 
+				                m_map.repaint();
+				            }
+				        });
+
+				        // 포커스 요청
+				        requestFocusInWindow();
+				    }
 				});
 			}
 		});

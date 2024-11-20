@@ -1,6 +1,5 @@
 package project;
 
-
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -10,8 +9,7 @@ import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
-
-public class Bear implements Moveable{
+public class Rabbit implements Moveable{
     public static final String LEFT_MOVE = "LEFT_MOVE";
     public static final String RIGHT_MOVE = "RIGHT_MOVE";
     public static final String LEFT_JUMP = "LEFT_JUMP";
@@ -19,7 +17,7 @@ public class Bear implements Moveable{
     public static final String ACTIVE = "ACTIVE";
     public static final String LEFT_IDLE = "LEFT_IDLE";
     public static final String RIGHT_IDLE = "RIGHT_IDLE";
-    public static final String basePath = "images/move/bear";
+    public static final String basePath = "images/move/rabbit";
     public static final String LEFT_AIR_MOVE = "LEFT_AIR_MOVE";
     public static final String RIGHT_AIR_MOVE = "RIGHT_AIR_MOVE";
     private Point position;
@@ -38,8 +36,8 @@ public class Bear implements Moveable{
     
     private JLabel character;
     private int mapOffsetX = 0;
-    private final int mapWidth = 1800;
-    private final int screenWidth = 700;
+//    private final int mapWidth = 1800;
+//    private final int screenWidth = 700;
     private ArrayList<ImageIcon> i_rightMove; // 오른쪽 이동
     private ArrayList<ImageIcon> i_leftMove; // 왼쪽 이동
     private ArrayList<ImageIcon> i_leftJump; // 왼쪽 점프
@@ -58,8 +56,8 @@ public class Bear implements Moveable{
     private int leftDeadIndex = 0; // 왼쪽 기본 인덱스
 	private boolean isActive = false;
 
-    public Bear() {
-    	this.position = new Point(100, 505);
+    public Rabbit() {
+    	this.position = new Point(100, 525);
     	character = new JLabel(); // JLabel 초기화
 	    character.setBounds(position.x, position.y, 200, 200); // 초기 위치 설정
     	loadMoveImage();
@@ -101,92 +99,179 @@ public class Bear implements Moveable{
         i_leftDead = new ArrayList<>();
         ImageIcon o_icon;
         Image s_image;
+
         // 12개의 걷기 밑 기본 애니메이션 이미지를 로드
-        for (int i = 1; i <= 12; i++) { // 0부터 11까지
-        	String filePath = basePath + "/move_left/left" + String.format("%02d.png", i);
+        for (int i = 1; i <= 8; i++) {
+            String filePath = basePath + "/move_left/left" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
+
+            // 원본 크기 가져오기
+            int originalWidth = o_icon.getIconWidth();
+            int originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            int newWidth = 190;
+            int newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
             ImageIcon leftMove = new ImageIcon(s_image);
-            
+
             String filePath1 = basePath + "/move_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath1);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
-            ImageIcon rightMove = new ImageIcon(s_image);  
-            
-            String filePath2 = basePath + "/idle_left/left" + String.format("%02d.png", i);
-            o_icon = new ImageIcon(filePath2);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
-            ImageIcon leftIdle = new ImageIcon(s_image);
-            
-            String filePath3 = basePath + "/idle_right/right" + String.format("%02d.png", i);
-            o_icon = new ImageIcon(filePath3);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
-            ImageIcon rightIdle = new ImageIcon(s_image); 
+
+            // 원본 크기 가져오기
+            originalWidth = o_icon.getIconWidth();
+            originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            newWidth = 190;
+            newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon rightMove = new ImageIcon(s_image);
 
             if (leftMove.getIconWidth() == -1) {
                 System.out.println("이미지를 로드할 수 없습니다: " + filePath);
             } else {
-            	i_leftMove.add(leftMove);
+                i_leftMove.add(leftMove);
             }
             if (rightMove.getIconWidth() == -1) {
                 System.out.println("이미지를 로드할 수 없습니다: " + filePath1);
             } else {
                 i_rightMove.add(rightMove);
             }
+        }
+
+        for (int i = 1; i <= 9; i++) {
+            String filePath2 = basePath + "/idle_left/left" + String.format("%02d.png", i);
+            o_icon = new ImageIcon(filePath2);
+
+            // 원본 크기 가져오기
+            int originalWidth = o_icon.getIconWidth();
+            int originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            int newWidth = 190;
+            int newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon leftIdle = new ImageIcon(s_image);
+
+            String filePath3 = basePath + "/idle_right/right" + String.format("%02d.png", i);
+            o_icon = new ImageIcon(filePath3);
+
+            // 원본 크기 가져오기
+            originalWidth = o_icon.getIconWidth();
+            originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            newWidth = 190;
+            newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon rightIdle = new ImageIcon(s_image);
+
             if (leftIdle.getIconWidth() == -1) {
                 System.out.println("이미지를 로드할 수 없습니다: " + filePath2);
             } else {
-            	i_leftIdle.add(leftIdle);
+                i_leftIdle.add(leftIdle);
             }
             if (rightIdle.getIconWidth() == -1) {
                 System.out.println("이미지를 로드할 수 없습니다: " + filePath3);
             } else {
-            	i_rightIdle.add(rightIdle);
+                i_rightIdle.add(rightIdle);
             }
         }
+
         // 2개의 점프 이미지 로드
         for (int i = 1; i <= 2; i++) {
-        	String filePath4 = basePath + "/jump_left/jump" + String.format("%02d.png", i);
+            String filePath4 = basePath + "/jump_left/left" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath4);
-            s_image = o_icon.getImage().getScaledInstance(85, 93, Image.SCALE_SMOOTH);
-        	ImageIcon leftJump = new ImageIcon(s_image);
-        	String filePath5 = basePath + "/jump_right/jump" + String.format("%02d.png", i);
+
+            // 원본 크기 가져오기
+            int originalWidth = o_icon.getIconWidth();
+            int originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            int newWidth = 190;
+            int newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon leftJump = new ImageIcon(s_image);
+
+            String filePath5 = basePath + "/jump_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath5);
-            s_image = o_icon.getImage().getScaledInstance(85, 93, Image.SCALE_SMOOTH);
-        	ImageIcon rightJump = new ImageIcon(s_image);
-        	
-        	if (leftJump.getIconWidth() == -1) {
-        		System.out.println("이미지를 로드할 수 없습니다: " + filePath4);
-        	} else {
-        		i_leftJump.add(leftJump);
-        	}
-        	if (rightJump.getIconWidth() == -1) {
-        		System.out.println("이미지를 로드할 수 없습니다: " + filePath5);
-        	} else {
-        		i_rightJump.add(rightJump);
-        	}
+
+            // 원본 크기 가져오기
+            originalWidth = o_icon.getIconWidth();
+            originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            newWidth = 200;
+            newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon rightJump = new ImageIcon(s_image);
+
+            if (leftJump.getIconWidth() == -1) {
+                System.out.println("이미지를 로드할 수 없습니다: " + filePath4);
+            } else {
+                i_leftJump.add(leftJump);
+            }
+            if (rightJump.getIconWidth() == -1) {
+                System.out.println("이미지를 로드할 수 없습니다: " + filePath5);
+            } else {
+                i_rightJump.add(rightJump);
+            }
         }
-        int newHeight = 100; // 원하는 높이
+
         for (int i = 1; i <= 8; i++) {
-        	String filePath6 = basePath + "/dead_left/left" + String.format("%02d.png", i);
-        	String filePath7 = basePath + "/dead_right/right" + String.format("%02d.png", i);
-            o_icon = new ImageIcon(filePath6);
-            s_image = o_icon.getImage().getScaledInstance(newHeight, o_icon.getIconWidth() * newHeight / o_icon.getIconHeight(), Image.SCALE_SMOOTH);
-        	ImageIcon leftDead = new ImageIcon(s_image);
+            String filePath6 = basePath + "/dead_left/left" + String.format("%02d.png", i);
+            String filePath7 = basePath + "/dead_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath7);
-            s_image = o_icon.getImage().getScaledInstance(newHeight, o_icon.getIconWidth() * newHeight / o_icon.getIconHeight(), Image.SCALE_SMOOTH);
-        	ImageIcon rightDead = new ImageIcon(s_image);
-        	
-        	if (leftDead.getIconWidth() == -1) {
-        		System.out.println("이미지를 로드할 수 없습니다: " + filePath6);
-        	} else {
-        		i_leftDead.add(leftDead);
-        	}
-        	if (rightDead.getIconWidth() == -1) {
-        		System.out.println("이미지를 로드할 수 없습니다: " + filePath7);
-        	} else {
-        		i_rightDead.add(rightDead);
-        	}
+
+            // 원본 크기 가져오기
+            int originalWidth = o_icon.getIconWidth();
+            int originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            int newWidth = 190;
+            int newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon leftDead = new ImageIcon(s_image);
+
+            o_icon = new ImageIcon(filePath6);
+
+            // 원본 크기 가져오기
+            originalWidth = o_icon.getIconWidth();
+            originalHeight = o_icon.getIconHeight();
+
+            // 비율 계산
+            newWidth = 190;
+            newHeight = (int) ((double) originalHeight / originalWidth * newWidth);
+
+            // 이미지 크기 조정
+            s_image = o_icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            ImageIcon rightDead = new ImageIcon(s_image);
+
+            if (leftDead.getIconWidth() == -1) {
+                System.out.println("이미지를 로드할 수 없습니다: " + filePath6);
+            } else {
+                i_leftDead.add(leftDead);
+            }
+            if (rightDead.getIconWidth() == -1) {
+                System.out.println("이미지를 로드할 수 없습니다: " + filePath7);
+            } else {
+                i_rightDead.add(rightDead);
+            }
         }
     }
     
@@ -196,7 +281,7 @@ public class Bear implements Moveable{
         List<Rectangle> platforms = mainMap.getPlatforms();
         // 좌우 충돌 확인
         for (Rectangle platform : platforms) {
-            if (new Rectangle(nextX, position.y + 100, 50, 50).intersects(platform)) {
+            if (new Rectangle(nextX + 60, position.y + 100, 90, 50).intersects(platform)) {
             	System.out.printf("netx : %d, position.y = %d platform.x = %d platform.y = %d\n", 
             			nextX, position.y, platform.x, platform.y);
                 // 충돌 발생: 이동 제한
@@ -207,6 +292,112 @@ public class Bear implements Moveable{
         // 충돌 없으면 이동
         return true;
     }
+//    private void loadMoveImage() {
+//        // 캐릭터 이미지 파일들을 로드하고 크기 조정
+//        i_rightMove = new ArrayList<>();
+//        i_leftMove = new ArrayList<>();
+//        i_leftIdle = new ArrayList<>();
+//        i_rightIdle = new ArrayList<>();
+//        i_rightJump = new ArrayList<>();
+//        i_leftJump = new ArrayList<>();
+//        i_rightDead = new ArrayList<>();
+//        i_leftDead = new ArrayList<>();
+//        ImageIcon o_icon;
+//        Image s_image;
+//        
+//        
+//        // 12개의 걷기 밑 기본 애니메이션 이미지를 로드
+//        for (int i = 1; i <= 8; i++) { 
+//        	String filePath = basePath + "/move_left/left" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//            ImageIcon leftMove = new ImageIcon(s_image);
+//            
+//            String filePath1 = basePath + "/move_right/right" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath1);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//            ImageIcon rightMove = new ImageIcon(s_image);  
+//            
+//            if (leftMove.getIconWidth() == -1) {
+//                System.out.println("이미지를 로드할 수 없습니다: " + filePath);
+//            } else {
+//            	i_leftMove.add(leftMove);
+//            }
+//            if (rightMove.getIconWidth() == -1) {
+//                System.out.println("이미지를 로드할 수 없습니다: " + filePath1);
+//            } else {
+//                i_rightMove.add(rightMove);
+//            }
+//        }
+//        
+//        for (int i = 1; i <= 9; i++) { 
+//            String filePath2 = basePath + "/idle_left/left" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath2);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//            ImageIcon leftIdle = new ImageIcon(s_image);
+//            
+//            String filePath3 = basePath + "/idle_right/right" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath3);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//            ImageIcon rightIdle = new ImageIcon(s_image); 
+//
+//            if (leftIdle.getIconWidth() == -1) {
+//                System.out.println("이미지를 로드할 수 없습니다: " + filePath2);
+//            } else {
+//            	i_leftIdle.add(leftIdle);
+//            }
+//            if (rightIdle.getIconWidth() == -1) {
+//                System.out.println("이미지를 로드할 수 없습니다: " + filePath3);
+//            } else {
+//            	i_rightIdle.add(rightIdle);
+//            }
+//        }
+//        
+//        // 2개의 점프 이미지 로드
+//        for (int i = 1; i <= 2; i++) {
+//        	String filePath4 = basePath + "/jump_left/left" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath4);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//        	ImageIcon leftJump = new ImageIcon(s_image);
+//        	String filePath5 = basePath + "/jump_right/right" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath5);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//        	ImageIcon rightJump = new ImageIcon(s_image);
+//        	
+//        	if (leftJump.getIconWidth() == -1) {
+//        		System.out.println("이미지를 로드할 수 없습니다: " + filePath4);
+//        	} else {
+//        		i_leftJump.add(leftJump);
+//        	}
+//        	if (rightJump.getIconWidth() == -1) {
+//        		System.out.println("이미지를 로드할 수 없습니다: " + filePath5);
+//        	} else {
+//        		i_rightJump.add(rightJump);
+//        	}
+//        }
+//        for (int i = 1; i <= 8; i++) {
+//        	String filePath6 = basePath + "/dead_left/left" + String.format("%02d.png", i);
+//        	String filePath7 = basePath + "/dead_right/right" + String.format("%02d.png", i);
+//            o_icon = new ImageIcon(filePath7);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//        	ImageIcon leftDead = new ImageIcon(s_image);
+//            o_icon = new ImageIcon(filePath6);
+//            s_image = o_icon.getImage().getScaledInstance(222, 224, Image.SCALE_SMOOTH);
+//        	ImageIcon rightDead = new ImageIcon(s_image);
+//        	
+//        	if (leftDead.getIconWidth() == -1) {
+//        		System.out.println("이미지를 로드할 수 없습니다: " + filePath6);
+//        	} else {
+//        		i_leftDead.add(leftDead);
+//        	}
+//        	if (rightDead.getIconWidth() == -1) {
+//        		System.out.println("이미지를 로드할 수 없습니다: " + filePath7);
+//        	} else {
+//        		i_rightDead.add(rightDead);
+//        	}
+//        }
+//    }
+    
 
  // 캐릭터 위치를 업데이트하고 화면과 동기화
     private void updateCharacterPosition() {
@@ -348,7 +539,7 @@ public class Bear implements Moveable{
 			          character.setIcon(i_rightIdle.get(rightIdleIndex));
 					}
 				try {
-					Thread.sleep(30);
+					Thread.sleep(50);
 				} catch (Exception e) {
 					System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 				}
