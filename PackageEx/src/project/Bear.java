@@ -3,11 +3,12 @@ package project;
 
 import java.awt.Point;
 import java.util.ArrayList;
+
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 
-public class Bear {
+public class Bear implements Moveable{
     public static final String LEFT_MOVE = "LEFT_MOVE";
     public static final String RIGHT_MOVE = "RIGHT_MOVE";
     public static final String LEFT_JUMP = "LEFT_JUMP";
@@ -19,6 +20,15 @@ public class Bear {
     public static final String LEFT_AIR_MOVE = "LEFT_AIR_MOVE";
     public static final String RIGHT_AIR_MOVE = "RIGHT_AIR_MOVE";
     private Point position;
+    
+	Direction direction;
+	boolean left;
+	boolean right;
+	boolean up;
+	boolean down;
+
+	private final int SPEED = 3;
+	private final int JUMPSPEED = 1;
     
     private JLabel character;
     private int mapOffsetX = 0;
@@ -146,167 +156,169 @@ public class Bear {
         }
     }
     
-    public void move(String direction) {
-    	switch(direction) {
-    	case LEFT_MOVE :
-    		if (position.x > 0) {
-    			position.x -= 8;
-    			
-                // 화면이 캐릭터를 따라 이동할지 결정
-                if (position.x < mapOffsetX + screenWidth / 2 && mapOffsetX > 0) {
-                    mapOffsetX = Math.max(0, mapOffsetX - 10);
-                    break;
-                }
-    			
-                updateCharacterPosition();
-                leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
-                character.setIcon(i_leftMove.get(leftMoveIndex));
-    		}
-    		break;
-    	case RIGHT_MOVE :
-    		if (position.x > 0) {
-    			position.x += 8;
-    			
-                if (position.x < mapOffsetX + screenWidth / 2 && mapOffsetX > mapWidth - screenWidth) {
-                    mapOffsetX = Math.min(mapWidth - screenWidth, mapOffsetX + 10);
-                    break;
-                }
-               
-                updateCharacterPosition();
-                rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
-                character.setIcon(i_rightMove.get(rightMoveIndex));
-    		}
-    		break;
 
-        case LEFT_JUMP:
-            new Thread(() -> {
-            	isActive = true;
-                for (int i = 0; i < i_leftJump.size(); i++) {
-                    position.y -= 20; // 점프 상승
+//    public void move(String direction) {
+//    	switch(direction) {
+//    	case LEFT_MOVE :
+//    		if (position.x > 0) {
+//    			position.x -= 8;
+//    			
+//                // 화면이 캐릭터를 따라 이동할지 결정
+//                if (position.x < mapOffsetX + screenWidth / 2 && mapOffsetX > 0) {
+//                    mapOffsetX = Math.max(0, mapOffsetX - 10);
+//                    break;
+//                }
+//    			
+//                updateCharacterPosition();
+//                leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
+//                character.setIcon(i_leftMove.get(leftMoveIndex));
+//    		}
+//    		break;
+//    	case RIGHT_MOVE :
+//    		if (position.x > 0) {
+//    			position.x += 8;
+//    			
+//                if (position.x < mapOffsetX + screenWidth / 2 && mapOffsetX > mapWidth - screenWidth) {
+//                    mapOffsetX = Math.min(mapWidth - screenWidth, mapOffsetX + 10);
+//                    break;
+//                }
+//               
+//                updateCharacterPosition();
+//                rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
+//                character.setIcon(i_rightMove.get(rightMoveIndex));
+//    		}
+//    		break;
+//
+//        case LEFT_JUMP:
+//            new Thread(() -> {
+//            	isActive = true;
+//                for (int i = 0; i < i_leftJump.size(); i++) {
+//                    position.y -= 20; // 점프 상승
 //                    move(LEFT_MOVE);
-                    updateCharacterPosition();
-                    leftJumpIndex = i % i_leftJump.size();
-                    character.setIcon(i_leftJump.get(leftJumpIndex));
-                    try {
-                        Thread.sleep(20); // 점프 애니메이션 속도 조절
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-                // 최고점에서 잠시 대기 (더 긴 시간)
-                try {
-                	for (int i = 0 ; i < 5; i++) {
-                		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+//                    updateCharacterPosition();
+//                    leftJumpIndex = i % i_leftJump.size();
+//                    character.setIcon(i_leftJump.get(leftJumpIndex));
+//                    try {
+//                        Thread.sleep(20); // 점프 애니메이션 속도 조절
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
+//                // 최고점에서 잠시 대기 (더 긴 시간)
+//                try {
+//                	for (int i = 0 ; i < 5; i++) {
+//                		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
 //                		if (position.x > 0) {
 //                			position.x -= 8;
 //                            updateCharacterPosition();
 //                		}
-                	}
-                    
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-                for (int i = i_leftJump.size() - 1; i >= 0; i--) {
-                    position.y += 20; // 점프 하강
-                   
+//                	}
+//                    
+//                } catch (InterruptedException ex) {
+//                    ex.printStackTrace();
+//                }
+//                for (int i = i_leftJump.size() - 1; i >= 0; i--) {
+//                    position.y += 20; // 점프 하강
+//                   
 //                    	move(LEFT_MOVE);
-                    
-                    updateCharacterPosition();
-                    leftJumpIndex = i % i_leftJump.size();
-                    character.setIcon(i_leftJump.get(leftJumpIndex));
-                    try {
-                        Thread.sleep(20); // 점프 애니메이션 속도 조절
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            	isActive = false;
-            }).start();
-            break;
-
-        case RIGHT_JUMP:
-            new Thread(() -> {
-            	isActive = true;
-                for (int i = 0; i < i_rightJump.size(); i++) {
-                    position.y -= 20; // 점프 상승
+//                    
+//                    updateCharacterPosition();
+//                    leftJumpIndex = i % i_leftJump.size();
+//                    character.setIcon(i_leftJump.get(leftJumpIndex));
+//                    try {
+//                        Thread.sleep(20); // 점프 애니메이션 속도 조절
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
+//            	isActive = false;
+//            }).start();
+//            break;
+//
+//        case RIGHT_JUMP:
+//            new Thread(() -> {
+//            	isActive = true;
+//                for (int i = 0; i < i_rightJump.size(); i++) {
+//                    position.y -= 20; // 점프 상승
 //                    move(RIGHT_MOVE);
-                    updateCharacterPosition();
-                    rightJumpIndex = i % i_rightJump.size();
-                    character.setIcon(i_rightJump.get(rightJumpIndex));
-                    try {
-                        Thread.sleep(20); // 점프 애니메이션 속도 조절
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-                // 최고점에서 잠시 대기 (더 긴 시간)
-                try {
-                	for (int i = 0 ; i < 5; i++) {
-                		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+//                    updateCharacterPosition();
+//                    rightJumpIndex = i % i_rightJump.size();
+//                    character.setIcon(i_rightJump.get(rightJumpIndex));
+//                    try {
+//                        Thread.sleep(20); // 점프 애니메이션 속도 조절
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
+//                // 최고점에서 잠시 대기 (더 긴 시간)
+//                try {
+//                	for (int i = 0 ; i < 5; i++) {
+//                		Thread.sleep(19); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
 //                		if (position.x > 0) {
 //                			position.x += 8;
 //                            updateCharacterPosition();
 //                		}
-                	}
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-                for (int i = i_rightJump.size() - 1; i >= 0; i--) {
-                    position.y += 20; // 점프 하강
+//                	}
+//                } catch (InterruptedException ex) {
+//                    ex.printStackTrace();
+//                }
+//                for (int i = i_rightJump.size() - 1; i >= 0; i--) {
+//                    position.y += 20; // 점프 하강
 //                    	move(RIGHT_MOVE);
-                    
-                    updateCharacterPosition();
-                    rightJumpIndex = i % i_rightJump.size();
-                    character.setIcon(i_rightJump.get(rightJumpIndex));
-                    try {
-                        Thread.sleep(20); // 점프 애니메이션 속도 조절
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-                isActive = false;
-            }).start();
-            break;
-    	case ACTIVE :
-    		break;
-    	case LEFT_IDLE :
-            updateCharacterPosition();
-            leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
-            character.setIcon(i_leftIdle.get(leftIdleIndex));
-    		break;
-    	case RIGHT_IDLE :
-            updateCharacterPosition();
-            rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
-            character.setIcon(i_rightIdle.get(rightIdleIndex));
-    		break;
-    	case LEFT_AIR_MOVE:
-            try {
-            	for (int i = 0 ; i < 5; i++) {
-            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
-            		if (position.x > 0) {
-            			position.x -= 8;
-                        updateCharacterPosition();
-            		}
-            	}
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-    		break;
-    	case RIGHT_AIR_MOVE:
-            try {
-            	for (int i = 0 ; i < 5; i++) {
-            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
-            		if (position.x > 0) {
-            			position.x += 8;
-                        updateCharacterPosition();
-            		}
-            	}
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-    		break;
-    	}
-    }
+//                    
+//                    updateCharacterPosition();
+//                    rightJumpIndex = i % i_rightJump.size();
+//                    character.setIcon(i_rightJump.get(rightJumpIndex));
+//                    try {
+//                        Thread.sleep(20); // 점프 애니메이션 속도 조절
+//                    } catch (InterruptedException ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
+//                isActive = false;
+//            }).start();
+//            break;
+//    	case ACTIVE :
+//    		break;
+//    	case LEFT_IDLE :
+//            updateCharacterPosition();
+//            leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
+//            character.setIcon(i_leftIdle.get(leftIdleIndex));
+//    		break;
+//    		
+//    	case RIGHT_IDLE :
+//            updateCharacterPosition();
+//            rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
+//            character.setIcon(i_rightIdle.get(rightIdleIndex));
+//    		break;
+//    	case LEFT_AIR_MOVE:
+//            try {
+//            	for (int i = 0 ; i < 5; i++) {
+//            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+//            		if (position.x > 0) {
+//            			position.x -= 8;
+//                        updateCharacterPosition();
+//            		}
+//            	}
+//            } catch (InterruptedException ex) {
+//                ex.printStackTrace();
+//            }
+//    		break;
+//    	case RIGHT_AIR_MOVE:
+//            try {
+//            	for (int i = 0 ; i < 5; i++) {
+//            		Thread.sleep(100); // 최고점에서 대기 (점프 최고점에서 더 길게 대기)
+//            		if (position.x > 0) {
+//            			position.x += 8;
+//                        updateCharacterPosition();
+//            		}
+//            	}
+//            } catch (InterruptedException ex) {
+//                ex.printStackTrace();
+//            }
+//    		break;
+//    	}
+//    }
 
  // 캐릭터 위치를 업데이트하고 화면과 동기화
     private void updateCharacterPosition() {
@@ -314,4 +326,140 @@ public class Bear {
 //        gamePanel.scrollRectToVisible(new Rectangle(mapOffsetX, 0, screenWidth, 700)); // 화면 스크롤 동기화
 //        gamePanel.repaint(); // 패널 다시 그리기
     }
+	@Override
+	public void up() {
+		if(!up && !down) {
+			up = true;
+			new Thread(() -> {
+				if (direction == Direction.RIGHT) {
+					for (int i = 0; i < 120; i++) {
+						position.y = position.y - (JUMPSPEED);
+	                    updateCharacterPosition();
+	                    rightJumpIndex = i % (i_rightJump.size() / 2);
+	                    character.setIcon(i_rightJump.get(rightJumpIndex));
+						try {
+							Thread.sleep(5);
+						} catch (Exception e) {
+							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
+						}
+					}
+				} 
+				else {
+					for (int i = 0; i < 120; i++) {
+						position.y = position.y - (JUMPSPEED);
+	                    updateCharacterPosition();
+	                    leftJumpIndex = i % (i_leftJump.size() / 2);
+	                    character.setIcon(i_leftJump.get(leftJumpIndex));
+						try {
+							Thread.sleep(5);
+						} catch (Exception e) {
+							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
+						}
+					}
+				}
+				up = false;
+				down();
+				
+			}).start();
+		}
+	}
+
+	@Override
+	public void down() {
+		if (!down) {
+			down = true;
+			new Thread(() -> {
+				if (down) {
+					if (direction == Direction.RIGHT) {
+						for (int i = 0; i < 120; i++) {
+							position.y = position.y + (JUMPSPEED);
+		                    updateCharacterPosition();
+		                    rightJumpIndex = (i % (i_rightJump.size() / 2) + 5);
+		                    character.setIcon(i_rightJump.get(rightJumpIndex));
+							try {
+								Thread.sleep(5);
+							} catch (Exception e) {
+								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
+							}
+						}
+					} 
+					else {
+						for (int i = 0; i < 120; i++) {
+							position.y = position.y + (JUMPSPEED);
+		                    updateCharacterPosition();
+		                    leftJumpIndex = (i % (i_leftJump.size() / 2) + 5);
+		                    character.setIcon(i_leftJump.get(leftJumpIndex));
+							try {
+								Thread.sleep(5);
+							} catch (Exception e) {
+								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
+							}
+						}
+					}
+					down = false;
+				}
+			}).start();
+		}
+	}
+
+	@Override
+	public void left() {
+		if (!left) {
+			left = true;
+			direction = Direction.LEFT;
+			
+			new Thread(() -> {
+				while (left) {
+					position.x = position.x - SPEED;
+					updateCharacterPosition();
+					
+					leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
+					character.setIcon(i_leftMove.get(leftMoveIndex));
+
+					try {
+						Thread.sleep(10);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동중 인터럽트 발생 : " + e.getMessage());
+					}
+				}
+			}).start();
+		}
+	}
+
+	@Override
+	public void right() {
+		if (!right) {
+			right = true;
+			direction = Direction.RIGHT;
+			
+			new Thread(() -> {
+				while (right) {
+					position.x = position.x + SPEED;
+					updateCharacterPosition();
+					
+					rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
+					character.setIcon(i_rightMove.get(rightMoveIndex));
+					
+					try {
+						Thread.sleep(10);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+					}
+				}
+			}).start();
+		}
+	}
+	@Override
+	public void idle() {
+		if (direction == Direction.LEFT && !up && !down && !right && !left) {
+          updateCharacterPosition();
+          leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
+          character.setIcon(i_leftIdle.get(leftIdleIndex));
+		} else if (direction == Direction.RIGHT && !up && !down && !right && !left) {
+          updateCharacterPosition();
+          rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
+          character.setIcon(i_rightIdle.get(rightIdleIndex));
+		}
+		
+	}
 }
