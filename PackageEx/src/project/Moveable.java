@@ -6,4 +6,5 @@ public interface Moveable {
 	public abstract void left();
 	public abstract void right();
 	public abstract void idle();
+	public abstract void dead();
 }

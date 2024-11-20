@@ -27,8 +27,9 @@ public class Bear implements Moveable{
 	boolean up;
 	boolean down;
 	boolean idle;
+	boolean dead;
 
-	private final int SPEED = 3;
+	private final int SPEED = 4;
 	private final int JUMPSPEED = 1;
     
     private JLabel character;
@@ -49,8 +50,8 @@ public class Bear implements Moveable{
     private int leftMoveIndex = 0; // 현재 이미지 인덱스
     private int rightIdleIndex = 0; // 오른쪽 기본 인덱스
     private int leftIdleIndex = 0; // 왼쪽 기본 인덱스
-    private int rightJumpIndex = 0; // 오른쪽 점프 인덱스
-    private int leftJumpIndex = 0; // 왼쪽 점프 인덱스
+    private int rightDeadIndex = 0; // 왼쪽 기본 인덱스
+    private int leftDeadIndex = 0; // 왼쪽 기본 인덱스
 	private boolean isActive = false;
 
     public Bear() {
@@ -80,6 +81,8 @@ public class Bear implements Moveable{
         leftMoveIndex = 0; // 현재 이미지 인덱스
         rightIdleIndex = 0; // 오른쪽 기본 인덱스
         leftIdleIndex = 0; // 왼쪽 기본 인덱스
+        rightDeadIndex = 0; // 왼쪽 기본 인덱스
+        leftDeadIndex = 0; // 왼쪽 기본 인덱스
     }
     
     private void loadMoveImage() {
@@ -90,6 +93,8 @@ public class Bear implements Moveable{
         i_rightIdle = new ArrayList<>();
         i_rightJump = new ArrayList<>();
         i_leftJump = new ArrayList<>();
+        i_rightDead = new ArrayList<>();
+        i_leftDead = new ArrayList<>();
         
         // 12개의 걷기 밑 기본 애니메이션 이미지를 로드
         for (int i = 1; i <= 12; i++) { // 0부터 11까지
@@ -124,8 +129,8 @@ public class Bear implements Moveable{
             	i_rightIdle.add(rightIdle);
             }
         }
-        // 10개의 점프 이미지 로드
-        for (int i = 1; i <= 10; i++) {
+        // 2개의 점프 이미지 로드
+        for (int i = 1; i <= 2; i++) {
         	String filePath4 = basePath + "/jump_left/jump" + String.format("%02d.png", i);
         	ImageIcon leftJump = new ImageIcon(filePath4);
         	String filePath5 = basePath + "/jump_right/jump" + String.format("%02d.png", i);
@@ -140,6 +145,24 @@ public class Bear implements Moveable{
         		System.out.println("이미지를 로드할 수 없습니다: " + filePath5);
         	} else {
         		i_rightJump.add(rightJump);
+        	}
+        }
+        
+        for (int i = 1; i <= 8; i++) {
+        	String filePath6 = basePath + "/dead_left/right" + String.format("%02d.png", i);
+        	ImageIcon leftDead = new ImageIcon(filePath6);
+        	String filePath7 = basePath + "/dead_right/left" + String.format("%02d.png", i);
+        	ImageIcon rightDead = new ImageIcon(filePath7);
+        	
+        	if (leftDead.getIconWidth() == -1) {
+        		System.out.println("이미지를 로드할 수 없습니다: " + filePath6);
+        	} else {
+        		i_leftDead.add(leftDead);
+        	}
+        	if (rightDead.getIconWidth() == -1) {
+        		System.out.println("이미지를 로드할 수 없습니다: " + filePath7);
+        	} else {
+        		i_rightDead.add(rightDead);
         	}
         }
 
@@ -180,10 +203,9 @@ public class Bear implements Moveable{
 					for (int i = 0; i < 120; i++) {
 						position.y = position.y - (JUMPSPEED);
 	                    updateCharacterPosition();
-	                    rightJumpIndex = i % (i_rightJump.size() / 2);
-	                    character.setIcon(i_rightJump.get(rightJumpIndex));
+	                    character.setIcon(i_rightJump.get(0));
 						try {
-							Thread.sleep(5);
+							Thread.sleep(4);
 						} catch (Exception e) {
 							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
 						}
@@ -193,10 +215,9 @@ public class Bear implements Moveable{
 					for (int i = 0; i < 120; i++) {
 						position.y = position.y - (JUMPSPEED);
 	                    updateCharacterPosition();
-	                    leftJumpIndex = i % (i_leftJump.size() / 2);
-	                    character.setIcon(i_leftJump.get(leftJumpIndex));
+	                    character.setIcon(i_leftJump.get(0));
 						try {
-							Thread.sleep(5);
+							Thread.sleep(4);
 						} catch (Exception e) {
 							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
 						}
@@ -219,10 +240,9 @@ public class Bear implements Moveable{
 						for (int i = 0; i < 120; i++) {
 							position.y = position.y + (JUMPSPEED);
 		                    updateCharacterPosition();
-		                    rightJumpIndex = (i % (i_rightJump.size() / 2) + 5);
-		                    character.setIcon(i_rightJump.get(rightJumpIndex));
+		                    character.setIcon(i_rightJump.get(1));
 							try {
-								Thread.sleep(5);
+								Thread.sleep(4);
 							} catch (Exception e) {
 								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
 							}
@@ -232,16 +252,16 @@ public class Bear implements Moveable{
 						for (int i = 0; i < 120; i++) {
 							position.y = position.y + (JUMPSPEED);
 		                    updateCharacterPosition();
-		                    leftJumpIndex = (i % (i_leftJump.size() / 2) + 5);
-		                    character.setIcon(i_leftJump.get(leftJumpIndex));
+		                    character.setIcon(i_leftJump.get(1));
 							try {
-								Thread.sleep(5);
+								Thread.sleep(4);
 							} catch (Exception e) {
 								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
 							}
 						}
 					}
 					down = false;
+					idle();
 				}
 			}).start();
 		}
@@ -257,12 +277,12 @@ public class Bear implements Moveable{
 				while (left) {
 					position.x = position.x - SPEED;
 					updateCharacterPosition();
-					
-					leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
-					character.setIcon(i_leftMove.get(leftMoveIndex));
-
+					if (!up && !down) {
+						leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
+						character.setIcon(i_leftMove.get(leftMoveIndex));
+					}
 					try {
-						Thread.sleep(10);
+						Thread.sleep(30);
 					} catch (Exception e) {
 						System.out.println("왼쪽 이동중 인터럽트 발생 : " + e.getMessage());
 					}
@@ -281,12 +301,12 @@ public class Bear implements Moveable{
 				while (right) {
 					position.x = position.x + SPEED;
 					updateCharacterPosition();
-					
-					rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
-					character.setIcon(i_rightMove.get(rightMoveIndex));
-					
+					if (!up && !down) {
+						rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
+						character.setIcon(i_rightMove.get(rightMoveIndex));
+					}
 					try {
-						Thread.sleep(10);
+						Thread.sleep(30);
 					} catch (Exception e) {
 						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 					}
@@ -311,6 +331,64 @@ public class Bear implements Moveable{
 					Thread.sleep(30);
 				} catch (Exception e) {
 					System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+				}
+			}
+		}).start();
+	}
+	@Override
+	public void dead() {
+		new Thread(() -> {
+			if (direction == Direction.RIGHT) {
+				for (int i = 0; i <= i_rightDead.size()/2; i++) {
+					position.x = position.x + SPEED;
+					position.y = position.y - JUMPSPEED;
+			        updateCharacterPosition();
+			        rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
+			        character.setIcon(i_rightDead.get(rightDeadIndex));
+			
+					try {
+						Thread.sleep(50);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+					}
+				}
+				for (int i = i_rightDead.size(); i >= i_rightDead.size()/2; i--) {
+					position.x = position.x - SPEED;
+					position.y = position.y + JUMPSPEED;
+			        updateCharacterPosition();
+			        rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
+			        character.setIcon(i_rightDead.get(rightDeadIndex));
+			
+					try {
+						Thread.sleep(50);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+					}
+				}
+			} else if (direction == Direction.LEFT) {
+				for (int i = 0; i <= i_leftDead.size()/2; i++) {
+					position.x = position.x - SPEED;
+					position.y = position.y - JUMPSPEED;
+			        updateCharacterPosition();
+			        leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
+			        character.setIcon(i_leftDead.get(leftDeadIndex));
+					try {
+						Thread.sleep(50);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+					}
+				}
+				for (int i = i_leftDead.size(); i >= i_leftDead.size()/2; i--) {
+					position.x = position.x - SPEED;
+					position.y = position.y + JUMPSPEED;
+			        updateCharacterPosition();
+			        leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
+			        character.setIcon(i_leftDead.get(leftDeadIndex));
+					try {
+						Thread.sleep(50);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+					}
 				}
 			}
 		}).start();

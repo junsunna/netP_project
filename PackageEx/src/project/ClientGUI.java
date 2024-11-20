@@ -78,7 +78,6 @@ public class ClientGUI extends JFrame {
 		setVisible(true);
 	}
 
-
 	private void buildGUI() {
 		createDisplayPanel();
 		createControlPanel();
@@ -229,7 +228,7 @@ public class ClientGUI extends JFrame {
 				                } else if (keyCode == KeyEvent.VK_RIGHT) {
 				                	bear.right = false;
 				                	bear.idle();
-				                }
+				                } 
 				                back_base.repaint();
 				            }
 				        });
