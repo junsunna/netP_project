@@ -78,6 +78,7 @@ public class Rabbit implements Moveable{
     	return isActive;
     }
     
+    @Override
     public void initIndex() {
     	rightMoveIndex = 0; // 현재 이미지 인덱스
         leftMoveIndex = 0; // 현재 이미지 인덱스
@@ -527,6 +528,7 @@ public class Rabbit implements Moveable{
 	}
 	@Override
 	public void idle() {
+		idle = true;
 		new Thread(() -> {
 			while (idle) {
 				if (direction == Direction.LEFT && !up && !down && !right && !left) {
@@ -548,6 +550,9 @@ public class Rabbit implements Moveable{
 	}
 	@Override
 	public void dead() {
+		idle = false;
+		left = false;
+		right = false;
 		new Thread(() -> {
 			if (direction == Direction.LEFT) {
 				for (int i = 0; i < i_rightDead.size() * 10; i++) {
@@ -612,6 +617,18 @@ public class Rabbit implements Moveable{
 			}
 		}).start();
 
+		
+	}
+	
+	@Override
+	public void left_released() {
+		idle = true;
+    	left = false;
+	}
+	@Override
+	public void right_released() {
+		idle = true;
+    	right = false;
 		
 	}
 }

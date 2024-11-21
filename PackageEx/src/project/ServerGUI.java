@@ -7,21 +7,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.ImageIcon;
@@ -44,6 +39,7 @@ public class ServerGUI extends JFrame {
 	private Thread acceptThread = null;
 	
 	private Vector<ClientHandler> users = new Vector<ClientHandler>();
+	private Map<String, ClientHandler> clientMap = new HashMap<>();  // 클라이언트 ID를 관리
 	
 	public ServerGUI(int port) {
 		super("Server GUI");
@@ -219,24 +215,10 @@ public class ServerGUI extends JFrame {
 		t_display.setCaretPosition(len);
 	}
 	
-
-	private void printDisplay(ImageIcon icon) {
-		t_display.setCaretPosition(t_display.getDocument().getLength());
-		
-		if (icon.getIconWidth() > 400) {
-			Image img = icon.getImage();
-			Image changeImg = img.getScaledInstance(400, -1, Image.SCALE_SMOOTH);
-			icon = new ImageIcon(changeImg);
-		}
-		t_display.insertIcon(icon);
-		
-		printDisplay("");
-	}
-	
 	private class ClientHandler extends Thread {
 		private Socket clientSocket;
-		private ObjectOutputStream out;
-		
+		private DataOutputStream out;
+		private DataInputStream in;
 		private String uid;
 		
 		public ClientHandler(Socket clientSocket) {
@@ -245,53 +227,46 @@ public class ServerGUI extends JFrame {
 		
 		private void receiveMessages(Socket cs) {
 			try {
-//				in = new DataInputStream(new BufferedInputStream(cs.getInputStream()));
-				ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(cs.getInputStream()));
-				out = new ObjectOutputStream(new BufferedOutputStream(cs.getOutputStream()));
+				in = new DataInputStream(new BufferedInputStream(cs.getInputStream()));
+				out = new DataOutputStream(new BufferedOutputStream(cs.getOutputStream()));
 				
-				String message; 
-				ObjMessage msg;
-				while ((msg = (ObjMessage)in.readObject()) != null) {
-					if (msg.mode == ObjMessage.MODE_LOGIN) {
-						uid = msg.userID;
-						
-						printDisplay("새 참가자: " + uid);
-						printDisplay("현재 참가자 수: " + users.size());
-						continue;
-					}
-					else if (msg.mode == ObjMessage.MODE_LOGOUT) {
-						break;
-					}
-					else if (msg.mode == ObjMessage.MODE_TX_STRING) {
-						message = uid + ": " + msg.message;
-						
-						printDisplay(message);
-//						broadcasting(message);
-						broadcasting(msg);
-					}
-					else if (msg.mode == ObjMessage.MODE_TX_FILE) {
-						printDisplay(uid + ": ");
-						printDisplay(msg.filename);
-						broadcasting(msg);
-					}
-					else if (msg.mode == ObjMessage.MODE_TX_IMAGE) {
-						printDisplay(uid + ": ");
-						printDisplay(msg.image);
-						broadcasting(msg);
-					}
-				}
+                // 클라이언트 ID 설정
+                out.writeUTF("Please provide your UID (e.g., Rabbit or Bear):");
+                out.flush();
+
+                // 클라이언트가 보낸 UID 수신
+                this.uid = in.readUTF().trim();
+                System.out.println("클라이언트 UID: " + uid);
+
+                // 클라이언트 ID를 Map에 추가
+                clientMap.put(uid, this);
+                
+                System.out.println("Client " + uid + " connected and added to clientMap.");
+                
+	            String receivedMessage;
+	            KeyMsg keyMsg;
+	            while ((receivedMessage = in.readUTF()) != null) {
+	                try {
+	                    receivedMessage = receivedMessage.trim().toUpperCase(); // 문자열 정리
+	                    keyMsg = KeyMsg.valueOf(receivedMessage); // KeyMsg로 변환
+	                    
+	                    // 받은 메시지를 브로드캐스트
+	                    broadcasting(keyMsg);
+	                } catch (IllegalArgumentException e) {
+	                    System.err.println("Invalid KeyMsg received: " + receivedMessage);
+	                }
+	            }
 				
 				users.removeElement(this);
 				printDisplay(uid + " 퇴장, 현재 참가자 수: " + users.size());
 			} catch (IOException e) {
 				System.err.println("클라이언트 연결 문제> " + e.getMessage());
-			} catch (ClassNotFoundException e) {
-				printDisplay("객체 수신 실패");
-			}
+			} 
 			finally {
 				printDisplay(uid + "가 연결을 종료했습니다.");
 				System.out.println("클라이언트가 연결을 종료했습니다.");
 				users.remove(this);
+	            clientMap.remove(uid);
 				try {
 					cs.close();
 				} 
@@ -302,31 +277,42 @@ public class ServerGUI extends JFrame {
 			}
 		}
 		
-		private void send(ObjMessage msg) {
+		private void send(KeyMsg msg) {
+		    if (msg == null) {
+		        System.err.println("Invalid KeyMsg: null");
+		        return;
+		    }
 			try {
-				out.writeObject(msg);
+				out.writeUTF(msg.name());
 				out.flush();
 			} catch (IOException e) {
 				System.err.println("클라이언트 일반 전송 오류> " + e.getMessage());
 			}
 		}
+        private void sendToSpecificClient(String targetId, KeyMsg msg) {
+            ClientHandler targetClient = clientMap.get(targetId);
+            System.out.println("Current clientMap: " + clientMap);
+            if (targetClient != null) {
+                targetClient.send(msg);
+            } else if (uid.equals("Bear")) {
+                System.err.println("대상 클라이언트를 찾을 수 없습니다: " + targetId);
+            }else {
+                System.err.println("Both Rabbit and Bear must be connected to send messages.");
+            }
+        }
 		
-		private void sendMessage(String msg) {
-//			try {
-//				out.write(uid + ": "+ msg + "\n");
-//				out.flush();
-//			} catch (IOException e) {
-//				System.err.println("메시지 전송 오류> " + e.getMessage());
-//			}
-			
-			send(new ObjMessage(uid, ObjMessage.MODE_TX_STRING, msg));
-		}
 		
-		private void broadcasting(ObjMessage msg) {
-			for (ClientHandler user : users) {
-//				user.sendMessage(msg, uid);
-				user.send(msg);
-			}
+		private void broadcasting(KeyMsg msg) {
+	        if (msg == null) {
+	            System.err.println("Cannot broadcast null KeyMsg");
+	            return;
+	        }
+            // 이 메서드는 동일한 쌍의 클라이언트에게만 메시지를 보냄
+            if (uid.equals("Rabbit")) {
+                sendToSpecificClient("Bear", msg);  // Rabbit -> Bear
+            } else if (uid.equals("Bear")) {
+                sendToSpecificClient("Rabbit", msg);  // Bear -> Rabbit
+            }
 		}
 		
 		@Override
@@ -338,7 +324,7 @@ public class ServerGUI extends JFrame {
 	
 
 	public static void main(String[] args) {
-		int port = 54311;
+		int port = 54321;
 		new ServerGUI(port);
 	}
 }
