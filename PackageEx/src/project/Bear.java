@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.Timer;
 
 
 public class Bear implements Moveable{
@@ -32,9 +33,10 @@ public class Bear implements Moveable{
 	boolean down;
 	boolean idle;
 	boolean dead;
+	boolean loop;
 
 	private final int SPEED = 4;
-	private final int JUMPSPEED = 1;
+	private final int JUMPSPEED = 2;
     
     private JLabel character;
     private int mapOffsetX = 0;
@@ -57,20 +59,23 @@ public class Bear implements Moveable{
     private int rightDeadIndex = 0; // 왼쪽 기본 인덱스
     private int leftDeadIndex = 0; // 왼쪽 기본 인덱스
 	private boolean isActive = false;
+	private boolean onGround = false;
 
     public Bear() {
-    	this.position = new Point(100, 505);
+    	this.position = new Point(0, 400);
     	character = new JLabel(); // JLabel 초기화
-	    character.setBounds(position.x, position.y, 200, 200); // 초기 위치 설정
+	    character.setBounds(position.x, position.y, 85, 93); // 초기 위치 설정
     	loadMoveImage();
     	left = false;
     	right = false;
     	up = false;
     	down = false;
-    	idle = true;
+    	idle = false;
+    	loop = false;
     	direction = Direction.RIGHT;
-    	idle();
     	mainMap = new MainMap();
+    	idle();
+    	gameLoop();
     }
     public JLabel getCharacter() {
         return character;
@@ -197,7 +202,7 @@ public class Bear implements Moveable{
         List<Rectangle> platforms = mainMap.getPlatforms();
         // 좌우 충돌 확인
         for (Rectangle platform : platforms) {
-            if (new Rectangle(nextX, position.y + 100, 50, 50).intersects(platform)) {
+            if (new Rectangle(nextX, position.y, 85, 93).intersects(platform)) {
             	System.out.printf("netx : %d, position.y = %d platform.x = %d platform.y = %d\n", 
             			nextX, position.y, platform.x, platform.y);
                 // 충돌 발생: 이동 제한
@@ -211,43 +216,71 @@ public class Bear implements Moveable{
 
  // 캐릭터 위치를 업데이트하고 화면과 동기화
     private void updateCharacterPosition() {
-        character.setBounds(position.x - mapOffsetX, position.y, 200, 200); // 캐릭터 위치 설정
+        character.setBounds(position.x - mapOffsetX, position.y, 85, 93); // 캐릭터 위치 설정
 //        gamePanel.scrollRectToVisible(new Rectangle(mapOffsetX, 0, screenWidth, 700)); // 화면 스크롤 동기화
 //        gamePanel.repaint(); // 패널 다시 그리기
     }
+    
+    private boolean upCharacter() {
+        position.y -= JUMPSPEED; // 위로 이동
+
+        List<Rectangle> platforms = mainMap.getPlatforms();
+    	for (Rectangle platform : platforms) {
+    		if (new Rectangle(position.x, position.y - JUMPSPEED, 85, 93).intersects(platform)) {
+    			 if (position.y + 50 > platform.y && position.y < platform.y + platform.height) {
+    	                position.y += JUMPSPEED; // 플랫폼 위로 이동
+    	                return true; // 더 이상 충돌 확인 불필요
+    	            }
+    	            onGround = false; // 점프 중이므로 착지 상태는 false
+    	            
+    	        }
+    	    }
+
+    	return false;
+    }
+    
+    private boolean downCharacter() {
+//        if (onGround) return; // 땅에 있다면 아래로 이동하지 않음
+
+        position.y += JUMPSPEED; // 중력 효과로 아래로 이동
+        List<Rectangle> platforms = mainMap.getPlatforms();
+
+        for (Rectangle platform : platforms) {
+            // 충돌 확인
+            if (new Rectangle(position.x, position.y + JUMPSPEED, 85, 93).intersects(platform)) {
+                position.y -= JUMPSPEED; // 캐릭터 크기 고려
+                onGround = true; // 착지 상태 설정
+                return true; // 충돌 후 더 이상 확인 불필요
+            }
+        }
+
+        // 충돌이 없으면 계속 아래로 이동
+        onGround = false;
+        return false;
+    }
+    
 	@Override
 	public void up() {
 		if(!up && !down) {
+			onGround = false;
 			up = true;
-			new Thread(() -> {
-				if (direction == Direction.RIGHT) {
-					for (int i = 0; i < 120; i++) {
-						position.y = position.y - (JUMPSPEED);
-	                    updateCharacterPosition();
-	                    character.setIcon(i_rightJump.get(0));
-						try {
-							Thread.sleep(4);
-						} catch (Exception e) {
-							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
-						}
-					}
-				} 
-				else {
-					for (int i = 0; i < 120; i++) {
-						position.y = position.y - (JUMPSPEED);
-	                    updateCharacterPosition();
-	                    character.setIcon(i_leftJump.get(0));
-						try {
-							Thread.sleep(4);
-						} catch (Exception e) {
-							System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
-						}
-					}
-				}
-				up = false;
-				down();
-				
-			}).start();
+	        new Thread(() -> {
+	            for (int i = 0; i < 120; i++) {
+                    if (!upCharacter()) { // 호출 추가
+                    	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(0) : i_leftJump.get(0));
+                    	updateCharacterPosition();
+                    } else 
+                    	break;
+	                
+	                try {
+	                    Thread.sleep(5);
+	                } catch (Exception e) {
+	                    System.out.println("위쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+	                }
+	            }
+	            up = false;
+	            down(); // 점프가 끝나면 하강 호출
+	        }).start();
 		}
 	}
 
@@ -255,36 +288,25 @@ public class Bear implements Moveable{
 	public void down() {
 		if (!down) {
 			down = true;
-			new Thread(() -> {
-				if (down) {
-					if (direction == Direction.RIGHT) {
-						for (int i = 0; i < 120; i++) {
-							position.y = position.y + (JUMPSPEED);
-		                    updateCharacterPosition();
-		                    character.setIcon(i_rightJump.get(1));
-							try {
-								Thread.sleep(4);
-							} catch (Exception e) {
-								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
-							}
-						}
-					} 
-					else {
-						for (int i = 0; i < 120; i++) {
-							position.y = position.y + (JUMPSPEED);
-		                    updateCharacterPosition();
-		                    character.setIcon(i_leftJump.get(1));
-							try {
-								Thread.sleep(4);
-							} catch (Exception e) {
-								System.out.println("위쪽 이동중 인터럽트 발생 : " + e.getMessage());
-							}
-						}
-					}
-					down = false;
-					idle();
-				}
-			}).start();
+	        new Thread(() -> {
+	            while (!onGround) { // 중력 효과
+	                if (downCharacter()) { // 호출 추가
+	                	System.out.println("바닥도착");
+	                	character.setIcon(direction == Direction.RIGHT ? i_rightIdle.get(1) : i_rightIdle.get(1));
+	                	updateCharacterPosition();
+	                	break;
+	                }
+	                updateCharacterPosition();
+                	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(1) : i_leftJump.get(1));
+	                try {
+	                    Thread.sleep(5); // 중력 효과 간격
+	                } catch (Exception e) {
+	                    System.out.println("아래쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+	                }
+	            }
+	            down = false;
+	            idle(); // 땅에 착지하면 기본 상태로 전환
+	        }).start();
 		}
 	}
 
@@ -295,8 +317,12 @@ public class Bear implements Moveable{
 			direction = Direction.LEFT;
 			
 			new Thread(() -> {
-				while (left && moveCharacter(-SPEED)) {
+				while (left) {
+			    	gameLoop();
 					position.x = position.x - SPEED;
+			    	if (!moveCharacter(-SPEED)) {
+			    		position.x = position.x + SPEED;
+			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
 						leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
@@ -308,6 +334,7 @@ public class Bear implements Moveable{
 						System.out.println("왼쪽 이동중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
+				left = false;
 			}).start();
 		}
 	}
@@ -317,10 +344,13 @@ public class Bear implements Moveable{
 		if (!right) {
 			right = true;
 			direction = Direction.RIGHT;
-			
 			new Thread(() -> {
-				while (right && moveCharacter(SPEED)) {
+				while (right) {
+			    	gameLoop();
 					position.x = position.x + SPEED;
+			    	if (!moveCharacter(SPEED)) {
+			    		position.x = position.x - SPEED;
+			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
 						rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
@@ -332,29 +362,33 @@ public class Bear implements Moveable{
 						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
+				right = false;
 			}).start();
 		}
 	}
 	@Override
 	public void idle() {
-		new Thread(() -> {
-			while (idle) {
-				if (direction == Direction.LEFT && !up && !down && !right && !left) {
-			          updateCharacterPosition();
-			          leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
-			          character.setIcon(i_leftIdle.get(leftIdleIndex));
-					} else if (direction == Direction.RIGHT && !up && !down && !right && !left) {
-			          updateCharacterPosition();
-			          rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
-			          character.setIcon(i_rightIdle.get(rightIdleIndex));
+		if (!idle) {
+			idle = true;
+			new Thread(() -> {
+				while (idle) {
+					if (direction == Direction.LEFT && !up && !down && !right && !left) {
+				          updateCharacterPosition();
+				          leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
+				          character.setIcon(i_leftIdle.get(leftIdleIndex));
+						} else if (direction == Direction.RIGHT && !up && !down && !right && !left) {
+				          updateCharacterPosition();
+				          rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
+				          character.setIcon(i_rightIdle.get(rightIdleIndex));
+						}
+					try {
+						Thread.sleep(30);
+					} catch (Exception e) {
+						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 					}
-				try {
-					Thread.sleep(30);
-				} catch (Exception e) {
-					System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 				}
-			}
-		}).start();
+			}).start();
+		}
 	}
 	@Override
 	public void dead() {
@@ -429,13 +463,27 @@ public class Bear implements Moveable{
 	}
 	@Override
 	public void left_released() {
-		idle = true;
     	left = false;
+    	idle();
 	}
 	@Override
 	public void right_released() {
-		idle = true;
     	right = false;
+    	idle();
 		
+	}
+	public void gameLoop() {
+		if (!loop) {
+			loop = true;
+		    Timer timer = new Timer(16, e -> {
+		        if (!up && !down) {
+		            if (!downCharacter()) { // 중력 효과
+		            	down();
+		            }
+		        }
+		        updateCharacterPosition();
+		    });
+		    timer.start();
+		}
 	}
 }

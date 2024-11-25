@@ -171,7 +171,7 @@ public class ClientGUI extends JFrame {
 				        remove(backgroundLabel);
 				        // 플레이 화면 생성
 				        mainMap = new MainMap();
-				        m_map = mainMap.createTile();
+				        m_map = mainMap.getMainMap();
 				        m_map.add(bear.getCharacter());
 				        m_map.add(rabbit.getCharacter());
 				        add(m_map);
@@ -250,7 +250,7 @@ public class ClientGUI extends JFrame {
 				        remove(backgroundLabel);
 				        // 플레이 화면 생성
 				        mainMap = new MainMap();
-				        m_map = mainMap.createTile();
+				        m_map = mainMap.getMainMap();
 				        m_map.add(rabbit.getCharacter());
 				        m_map.add(bear.getCharacter());
 				        add(m_map);
