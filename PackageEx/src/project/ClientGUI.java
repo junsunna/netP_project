@@ -1,6 +1,5 @@
 package project;
 
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -9,35 +8,29 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 
 public class ClientGUI extends JFrame {
-//	private JTextArea t_display;
 	private Bear bear;
 	private Rabbit rabbit;
 	private MainMap mainMap;
-	private JLabel m_map;
+	private JPanel m_map;
+	private OptionPane oPane;
 	
 	private JLabel backgroundLabel, back_cake, back_choice;
 	private JTextPane t_display;
@@ -54,6 +47,12 @@ public class ClientGUI extends JFrame {
 	private Thread receiveThread = null;
     private String uid;
 
+
+    int panelWidth = 715; 
+    int mapWidth = 1800;
+    int screenCenterX = panelWidth / 2;
+	int mapX = 0; // 맵의 X 좌표
+    
 	public ClientGUI(String serverAddress, int serverPort) {
 		super("Client GUI");
 		this.serverAddress = serverAddress; 
@@ -74,6 +73,30 @@ public class ClientGUI extends JFrame {
 		createDisplayPanel();
 		createControlPanel();
 	}
+	
+//	private void updateMap() {
+//		if (bear.left || bear.right) {
+//			
+//		}
+//	    // 캐릭터의 현재 위치
+//	    int characterX = bear.position.x;
+//	    // mapX는 맵의 위치를 나타내므로, 화면의 중앙으로 맞추기 위해 캐릭터 위치를 기준으로 이동
+//	    if (characterX > screenCenterX && mapX > -(mapWidth - panelWidth) && mapX > -(mapWidth - screenCenterX - 20)) {
+//	        // 캐릭터가 중앙을 넘어가면 맵을 오른쪽으로 이동
+//	    	screenCenterX += 20;
+//	        mapX -= 20;  // 맵을 오른쪽으로 5픽셀 이동
+//	    } else if (characterX < screenCenterX && mapX < 0) {
+//	        // 캐릭터가 중앙을 넘어가면 맵을 왼쪽으로 이동
+//	        mapX += 20;  // 맵을 왼쪽으로 5픽셀 이동
+//	    	screenCenterX -= 20;
+//	    }
+//
+//	    // 맵의 위치 업데이트
+//	    m_map.setLocation(mapX, 0);
+//	}
+
+
+
 	
 	private void createDisplayPanel() {
 		i_startB = new ImageIcon("images/background/b_start.png");
@@ -164,18 +187,34 @@ public class ClientGUI extends JFrame {
 				    @Override
 				    public void actionPerformed(ActionEvent e) {
 				    	uid = "Bear";
-				        // Bear 객체 생성
-				        bear = new Bear();
-				    	rabbit = new Rabbit();
-				        // 시작 화면 삭제
+				    	
+				    	// OptionPane 생성 및 GlassPane 설정
+				    	oPane = new OptionPane();
+				    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
+				        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
+				        glassPane.setLayout(null); // 레이아웃 설정
+				        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
+				        
+				        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
+				        
+				        glassPane.add(oPane.getPane()); // OptionPane 추가
+				        glassPane.setVisible(true); // GlassPane 활성화
+				        
+				        add(oPane.getPane());
+				        
+				    	// 시작 화면 삭제
 				        remove(backgroundLabel);
 				        // 플레이 화면 생성
 				        mainMap = new MainMap();
 				        m_map = mainMap.getMainMap();
+				        
+				        bear = new Bear(m_map, oPane);
+				        rabbit = new Rabbit(m_map, oPane);
+				    	
 				        m_map.add(bear.getCharacter());
 				        m_map.add(rabbit.getCharacter());
 				        add(m_map);
-				        
+
 						setSize(1100, 738);
 				        revalidate();
 				        repaint();				        
@@ -193,16 +232,19 @@ public class ClientGUI extends JFrame {
 				        addKeyListener(new KeyAdapter() {
 				            @Override
 				            public void keyPressed(KeyEvent e) {
+				            	if (bear.isDead)return; 
 				                int keyCode = e.getKeyCode();
 				                bear.idle = false;
 				                	switch (keyCode) {
 				                	 	case KeyEvent.VK_LEFT :
 				                	 		send(KeyMsg.KEY_LEFT);
 						                    bear.left();
+//						                    updateMap();
 						                    break;
 						                case KeyEvent.VK_RIGHT :
 						                	send(KeyMsg.KEY_RIGHT);
 						                	bear.right();
+//						                	updateMap();
 						                	break;
 						                case KeyEvent.VK_SPACE:
 						                	send(KeyMsg.KEY_SPACE);
@@ -241,16 +283,26 @@ public class ClientGUI extends JFrame {
 				b_rabbit.addActionListener(new ActionListener() {
 				    @Override
 				    public void actionPerformed(ActionEvent e) {
-				        // Bear 객체 생성
 				    	uid = "Rabbit";
 				        System.out.println("UID set to: " + uid); // UID 확인
-				    	rabbit = new Rabbit();
-				    	bear = new Bear();
 				        // 시작 화면 삭제
 				        remove(backgroundLabel);
+				     // OptionPane 생성 및 GlassPane 설정
+				        oPane = new OptionPane();
+				        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
+				        glassPane.setLayout(null); // 레이아웃 설정
+				        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
+				        
+				        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
+				        glassPane.add(oPane.getPane()); // OptionPane 추가
+				        glassPane.setVisible(true); // GlassPane 활성화
+				        
+				        add(oPane.getPane());
 				        // 플레이 화면 생성
 				        mainMap = new MainMap();
 				        m_map = mainMap.getMainMap();
+				    	rabbit = new Rabbit(m_map, oPane);
+				    	bear = new Bear(m_map, oPane);
 				        m_map.add(rabbit.getCharacter());
 				        m_map.add(bear.getCharacter());
 				        add(m_map);
@@ -271,16 +323,19 @@ public class ClientGUI extends JFrame {
 				        addKeyListener(new KeyAdapter() {
 				            @Override
 				            public void keyPressed(KeyEvent e) {
+				            	if (rabbit.isDead)return; 
 				                int keyCode = e.getKeyCode();
 				                rabbit.idle = false;
 				                	switch (keyCode) {
 				                	 	case KeyEvent.VK_LEFT :
 				                	 		send(KeyMsg.KEY_LEFT);
 				                	 		rabbit.left();
+//				                	 		updateMap();
 						                    break;
 						                case KeyEvent.VK_RIGHT :
 						                	send(KeyMsg.KEY_RIGHT);
 						                	rabbit.right();
+//						                	updateMap();
 						                	break;
 						                case KeyEvent.VK_SPACE:
 						                	send(KeyMsg.KEY_SPACE);

@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class Rabbit implements Moveable{
@@ -30,12 +31,14 @@ public class Rabbit implements Moveable{
 	boolean up;
 	boolean down;
 	boolean idle;
-	boolean dead;
+	boolean isDead;
 	boolean loop;
 
 	private final int SPEED = 5;
 	private final int JUMPSPEED = 2;
-    
+	private int heart;
+    private OptionPane o_pane;
+	private JPanel m_map;
     private JLabel character;
     private int mapOffsetX = 0;
 //    private final int mapWidth = 1800;
@@ -59,10 +62,16 @@ public class Rabbit implements Moveable{
 	private boolean isActive = false;
 	private boolean onGround = false;
 	
+    int panelWidth = 715; 
+    int mapWidth = 1800;
+    int screenCenterX = panelWidth / 2;
+	int mapX = 0; // 맵의 X 좌표
+	
 	int newWidth = 190;
     int newHeight= 190;
 	
-    public Rabbit() {
+    public Rabbit(JPanel m_map, OptionPane o_pane) {
+    	this.m_map = m_map;
     	mainMap = new MainMap();
     	this.position = new Point(140, 527);
     	character = new JLabel(); // JLabel 초기화
@@ -74,6 +83,8 @@ public class Rabbit implements Moveable{
     	down = false;
     	idle = false;
     	loop = false;
+    	this.o_pane = o_pane;
+    	heart = 3;
     	direction = Direction.RIGHT;
     	idle();
     }
@@ -244,6 +255,23 @@ public class Rabbit implements Moveable{
 //        gamePanel.scrollRectToVisible(new Rectangle(mapOffsetX, 0, screenWidth, 700)); // 화면 스크롤 동기화
 //        gamePanel.repaint(); // 패널 다시 그리기
     }
+	private void updateMap() {
+	    // 캐릭터의 현재 위치
+	    int characterX = position.x;
+	    // mapX는 맵의 위치를 나타내므로, 화면의 중앙으로 맞추기 위해 캐릭터 위치를 기준으로 이동
+	    if (characterX > screenCenterX && mapX > -(mapWidth - panelWidth) && mapX > -(mapWidth - screenCenterX - 20)) {
+	        // 캐릭터가 중앙을 넘어가면 맵을 오른쪽으로 이동
+	    	screenCenterX += SPEED;
+	        mapX -= SPEED;  // 맵을 오른쪽으로 5픽셀 이동
+	    } else if (characterX < screenCenterX && mapX < 0) {
+	        // 캐릭터가 중앙을 넘어가면 맵을 왼쪽으로 이동
+	        mapX += SPEED;  // 맵을 왼쪽으로 5픽셀 이동
+	    	screenCenterX -= SPEED;
+	    }
+
+	    // 맵의 위치 업데이트
+	    m_map.setLocation(mapX, 0);
+	}
     
     private boolean upCharacter() {
         position.y -= JUMPSPEED; // 위로 이동
@@ -262,10 +290,8 @@ public class Rabbit implements Moveable{
 
     	return false;
     }
-    
-    private boolean downCharacter() {
-//        if (onGround) return; // 땅에 있다면 아래로 이동하지 않음
 
+    private boolean downCharacter() {
         position.y += JUMPSPEED; // 중력 효과로 아래로 이동
         List<Rectangle> platforms = mainMap.getPlatforms();
 
@@ -274,10 +300,13 @@ public class Rabbit implements Moveable{
             if (new Rectangle(position.x + 50, position.y + 25 + JUMPSPEED, 85, 93).intersects(platform)) {
                 position.y -= JUMPSPEED; // 캐릭터 크기 고려
                 onGround = true; // 착지 상태 설정
+
+                if (platform instanceof Platform && ((Platform) platform).id == 24) {
+                	dead();
+                }
                 return true; // 충돌 후 더 이상 확인 불필요
             }
         }
-
         // 충돌이 없으면 계속 아래로 이동
         onGround = false;
         return false;
@@ -346,6 +375,8 @@ public class Rabbit implements Moveable{
 					position.x = position.x - SPEED;
 			    	if (!moveCharacter(-SPEED)) {
 			    		position.x = position.x + SPEED;
+			    	} else {
+						updateMap();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
@@ -374,6 +405,8 @@ public class Rabbit implements Moveable{
 					position.x = position.x + SPEED;
 			    	if (!moveCharacter(SPEED)) {
 			    		position.x = position.x - SPEED;
+			    	} else {
+			    		updateMap();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
@@ -416,13 +449,19 @@ public class Rabbit implements Moveable{
 	}
 	@Override
 	public void dead() {
-		idle = false;
-		left = false;
-		right = false;
+		if (isDead) return;
+		idle = true;
+		left = true;
+		right = true;
+		up = true;
+		down = true;
+		isDead = true;
+		heart -= 1;
+		o_pane.updateHeart(heart);
 		new Thread(() -> {
 			if (direction == Direction.LEFT) {
 				for (int i = 0; i < i_rightDead.size() * 10; i++) {
-					position.x = position.x + 1;
+//					position.x = position.x + 1;
 					position.y = position.y - 1;
 					if (i % 20 == 0) {
 						rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
@@ -432,58 +471,96 @@ public class Rabbit implements Moveable{
 					try {
 						Thread.sleep(8);
 					} catch (Exception e) {
-						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+						System.out.println("죽음 모션 중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
-				for (int i = i_rightDead.size() * 10; i > 0; i--) {
-					position.x = position.x + 1;
+				int delay = 0;
+				while (true) {
+					delay++;
+					if (downCharacter()) break;
+//					position.x = position.x + 1;
 					position.y = position.y + 1;
-					
-					if (i % 20 == 0) {
-			        	rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
+					if (delay % 20 == 0) {
+						rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
+						if (rightDeadIndex == 0) {
+							updateCharacterPosition();
+			        		continue;
+			        	}
+						
 			        	character.setIcon(i_rightDead.get(rightDeadIndex));
 					}
 					updateCharacterPosition();
 					try {
 						Thread.sleep(8);
 					} catch (Exception e) {
-						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+						System.out.println("죽음 모션 중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
 			} else if (direction == Direction.RIGHT) {
 				for (int i = 0; i < i_leftDead.size() * 10; i++) {
-					position.x = position.x - 1;
+//					position.x = position.x - 1;
 					position.y = position.y - 1;
-			        updateCharacterPosition();
 			        
 					if (i % 20 == 0) {
 						leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
 			        	character.setIcon(i_leftDead.get(leftDeadIndex));
 					}
+			        updateCharacterPosition();
 					try {
 						Thread.sleep(8);
 					} catch (Exception e) {
-						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+						System.out.println("죽음 모션 중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
-				for (int i = i_leftDead.size() * 10; i > 0; i--) {
-					position.x = position.x - 1;
+				int delay = 0;
+				while (true) {
+					delay++;
+					if (downCharacter()) break;
+//					position.x = position.x - 1;
 					position.y = position.y + 1;
-			        updateCharacterPosition();
-					if (i % 20 == 0) {
+					if (delay % 20 == 0) {
 						leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
+						if (leftDeadIndex == 0) {
+							updateCharacterPosition();
+			        		continue;
+			        	}
+						
 			        	character.setIcon(i_leftDead.get(leftDeadIndex));
 					}
+					updateCharacterPosition();
 					try {
 						Thread.sleep(8);
 					} catch (Exception e) {
-						System.out.println("왼쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+						System.out.println("죽음 모션 중 인터럽트 발생 : " + e.getMessage());
 					}
 				}
 			}
-		}).start();
-
-		
+			try {
+				Thread.sleep(300);
+			} catch (Exception e) {
+				System.out.println("죽음 모션 중 인터럽트 발생 : " + e.getMessage());
+			}
+			if (heart == 0) {
+				return;
+			}
+	        // 초기 위치로 설정
+	        position.x = 140; // 초기 x 좌표
+	        position.y = 527; // 초기 y 좌표
+	        updateCharacterPosition(); // 위치 업데이트
+	    	left = false;
+	    	right = false;
+	    	up = false;
+	    	down = false;
+	    	idle = false;
+	    	loop = false;
+	    	isDead = false;
+	        idle();
+	        
+	        // 맵 초기화
+	        mapX = 0; // 맵의 초기 X 위치
+	        screenCenterX = panelWidth / 2; // 화면 중앙 초기화
+	        m_map.setLocation(mapX, 0); // 맵의 위치 업데이트
+		}).start();	
 	}
 	@Override
 	public void left_released() {
