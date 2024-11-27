@@ -201,7 +201,6 @@ public class ClientGUI extends JFrame {
 				        glassPane.setVisible(true); // GlassPane 활성화
 				        
 				        add(oPane.getPane());
-				        
 				    	// 시작 화면 삭제
 				        remove(backgroundLabel);
 				        // 플레이 화면 생성
@@ -209,6 +208,7 @@ public class ClientGUI extends JFrame {
 				        m_map = mainMap.getMainMap();
 				        
 				        bear = new Bear(m_map, oPane);
+				        bear.setPlayer(true);
 				        rabbit = new Rabbit(m_map, oPane);
 				    	
 				        m_map.add(bear.getCharacter());
@@ -287,13 +287,15 @@ public class ClientGUI extends JFrame {
 				        System.out.println("UID set to: " + uid); // UID 확인
 				        // 시작 화면 삭제
 				        remove(backgroundLabel);
-				     // OptionPane 생성 및 GlassPane 설정
-				        oPane = new OptionPane();
+				    	// OptionPane 생성 및 GlassPane 설정
+				    	oPane = new OptionPane();
+				    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
 				        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
 				        glassPane.setLayout(null); // 레이아웃 설정
 				        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
 				        
 				        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
+				        
 				        glassPane.add(oPane.getPane()); // OptionPane 추가
 				        glassPane.setVisible(true); // GlassPane 활성화
 				        
@@ -302,6 +304,7 @@ public class ClientGUI extends JFrame {
 				        mainMap = new MainMap();
 				        m_map = mainMap.getMainMap();
 				    	rabbit = new Rabbit(m_map, oPane);
+				    	rabbit.setPlayer(true);
 				    	bear = new Bear(m_map, oPane);
 				        m_map.add(rabbit.getCharacter());
 				        m_map.add(bear.getCharacter());

@@ -36,6 +36,7 @@ public class Bear implements Moveable{
 	boolean idle;
 	boolean isDead;
 	boolean loop;
+	boolean player;
 	
 	private int heart;
 	private final int SPEED = 4;
@@ -77,6 +78,7 @@ public class Bear implements Moveable{
     	down = false;
     	idle = false;
     	loop = false;
+    	player = false;
     	direction = Direction.RIGHT;
     	mainMap = new MainMap();
     	this.m_map = m_map;
@@ -91,7 +93,10 @@ public class Bear implements Moveable{
 
     public boolean getIsActive() {
     	return isActive;
-    }				       
+    }			
+    public void setPlayer(boolean play) {
+    	this.player = play;
+    }
     
     @Override
     public void initIndex() {
@@ -345,7 +350,7 @@ public class Bear implements Moveable{
 					position.x = position.x - SPEED;
 			    	if (!moveCharacter(-SPEED)) {
 			    		position.x = position.x + SPEED;
-			    	} else {
+			    	} else if (player){
 						updateMap();
 			    	}
 					updateCharacterPosition();
@@ -375,8 +380,8 @@ public class Bear implements Moveable{
 					position.x = position.x + SPEED;
 			    	if (!moveCharacter(SPEED)) {
 			    		position.x = position.x - SPEED;
-			    	} else {
-			    		updateMap();
+			    	} else if (player){
+						updateMap();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {

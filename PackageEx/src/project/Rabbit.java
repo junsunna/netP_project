@@ -33,8 +33,9 @@ public class Rabbit implements Moveable{
 	boolean idle;
 	boolean isDead;
 	boolean loop;
+	boolean player;
 
-	private final int SPEED = 5;
+	private final int SPEED = 4;
 	private final int JUMPSPEED = 2;
 	private int heart;
     private OptionPane o_pane;
@@ -83,6 +84,7 @@ public class Rabbit implements Moveable{
     	down = false;
     	idle = false;
     	loop = false;
+    	player = false;
     	this.o_pane = o_pane;
     	heart = 3;
     	direction = Direction.RIGHT;
@@ -94,6 +96,9 @@ public class Rabbit implements Moveable{
 
     public boolean getIsActive() {
     	return isActive;
+    }
+    public void setPlayer(boolean play) {
+    	this.player = play;
     }
     
     @Override
@@ -375,7 +380,7 @@ public class Rabbit implements Moveable{
 					position.x = position.x - SPEED;
 			    	if (!moveCharacter(-SPEED)) {
 			    		position.x = position.x + SPEED;
-			    	} else {
+			    	} else if (player){
 						updateMap();
 			    	}
 					updateCharacterPosition();
@@ -405,8 +410,8 @@ public class Rabbit implements Moveable{
 					position.x = position.x + SPEED;
 			    	if (!moveCharacter(SPEED)) {
 			    		position.x = position.x - SPEED;
-			    	} else {
-			    		updateMap();
+			    	} else if (player){
+						updateMap();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
