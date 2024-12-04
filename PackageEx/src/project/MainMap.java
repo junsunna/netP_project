@@ -2,13 +2,14 @@ package project;
 
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
 
 
@@ -26,6 +27,9 @@ public class MainMap {
 	private List<Rectangle> platformBounds; // 발판 충돌 범위를 저장하는 리스트
 	private static final String dBasePath = "images/tile/dynamic";
 	private int mapX = 0;
+	private int currentTileIndex = 7; // 초기값은 7번 타일
+	private boolean isTileChanged = false;// 타일 전환 여부 추적
+	
 	MainMap() {
 		platformBounds = new ArrayList<>();
 		initTile();
@@ -43,6 +47,7 @@ public class MainMap {
 		
 		createDynamicTile();
 		initPlatforms();
+		dynamicTimer();
 	}
 	
 	// 배경을 이동시키는 메서드
@@ -110,34 +115,45 @@ public class MainMap {
 		d_tile5 = new JLabel(id_tile5);
 		d_tile5.setBounds(550, 650, id_tile5.getIconWidth(), id_tile5.getIconHeight());
 		back_base.add(d_tile5);
-//		
-//		d_tile6 = new JLabel(id_tile6);
-//		d_tile6.setBounds(1500, 100, id_tile6.getIconWidth(), id_tile6.getIconHeight());
-//		back_base.add(d_tile6);
-//		
-//		d_tile7 = new JLabel(id_tile7);
-//		d_tile7.setBounds(850, 400, id_tile7.getIconWidth(), id_tile7.getIconHeight());
-//		back_base.add(d_tile7);
-//		
-//		d_tile8 = new JLabel(id_tile8);
-//		d_tile8.setBounds(1750, 500, id_tile8.getIconWidth(), id_tile8.getIconHeight());
-//		back_base.add(d_tile8);
-//
-//		d_tile9 = new JLabel(id_tile9);
-//		d_tile9.setBounds(800, 88, id_tile9.getIconWidth(), id_tile9.getIconHeight());
-//		back_base.add(d_tile9);
-//
-//		d_tile10 = new JLabel(id_tile10);
-//		d_tile10.setBounds(1100, 200, id_tile10.getIconWidth(), id_tile10.getIconHeight());
-//		back_base.add(d_tile10);
-//		
-//		d_tile11 = new JLabel(id_tile11);
-//		d_tile11.setBounds(0, 650, id_tile11.getIconWidth(), id_tile11.getIconHeight());
-//		back_base.add(d_tile11);
-//		
-//		d_tile12 = new JLabel(id_tile12);
-//		d_tile12.setBounds(1000, 650, id_tile12.getIconWidth(), id_tile12.getIconHeight());
-//		back_base.add(d_tile12);
+		
+		d_tile6 = new JLabel(id_tile6);
+		d_tile6.setBounds(550, 650, id_tile6.getIconWidth(), id_tile6.getIconHeight());
+		back_base.add(d_tile6);
+		
+
+		// 초기 상태: d_tile5만 보이도록 설정
+		d_tile5.setVisible(true);
+		d_tile6.setVisible(false);
+		
+		// 7번부터 12번 타일 초기화
+		d_tile7 = new JLabel(id_tile7);
+		d_tile7.setBounds(1650, 250, id_tile7.getIconWidth(), id_tile7.getIconHeight());
+		back_base.add(d_tile7);
+
+		d_tile8 = new JLabel(id_tile8);
+		d_tile8.setBounds(1650, 285, id_tile8.getIconWidth(), id_tile8.getIconHeight());
+		d_tile8.setVisible(false); // 초기 상태에서 숨김
+		back_base.add(d_tile8);
+
+		d_tile9 = new JLabel(id_tile9);
+		d_tile9.setBounds(1650, 285, id_tile9.getIconWidth(), id_tile9.getIconHeight());
+		d_tile9.setVisible(false); // 초기 상태에서 숨김
+		back_base.add(d_tile9);
+
+		d_tile10 = new JLabel(id_tile10);
+		d_tile10.setBounds(1647, 285, id_tile10.getIconWidth(), id_tile10.getIconHeight());
+		d_tile10.setVisible(false); // 초기 상태에서 숨김
+		back_base.add(d_tile10);
+
+		d_tile11 = new JLabel(id_tile11);
+		d_tile11.setBounds(1650, 285, id_tile11.getIconWidth(), id_tile11.getIconHeight());
+		d_tile11.setVisible(false); // 초기 상태에서 숨김
+		back_base.add(d_tile11);
+
+		d_tile12 = new JLabel(id_tile12);
+		d_tile12.setBounds(1650, 250, id_tile12.getIconWidth(), id_tile12.getIconHeight());
+		d_tile12.setVisible(false); // 초기 상태에서 숨김
+		back_base.add(d_tile12);
 //		
 //		d_tile13 = new JLabel(id_tile13);
 //		d_tile13.setBounds(1000, 650, id_tile13.getIconWidth(), id_tile13.getIconHeight());
@@ -158,6 +174,84 @@ public class MainMap {
 //		d_tile17 = new JLabel(id_tile17);
 //		d_tile17.setBounds(1000, 650, id_tile17.getIconWidth(), id_tile17.getIconHeight());
 //		back_base.add(d_tile17);
+	}
+	private void dynamicTimer() {
+		// 타이머 생성
+		javax.swing.Timer waveTimer = new javax.swing.Timer(300, new ActionListener() {
+		    boolean toggle = true; // 이미지 전환 상태
+
+		    @Override
+		    public void actionPerformed(ActionEvent e) {
+		        if (id_tile5 == null || id_tile6 == null) {
+		            System.err.println("이미지 초기화 실패: id_tile5 또는 id_tile6이 null입니다.");
+		            return;
+		        }
+
+		        if (toggle) {
+		            d_tile5.setVisible(true);
+		            d_tile6.setVisible(false);
+		        } else {
+		            d_tile5.setVisible(false);
+		            d_tile6.setVisible(true);
+		        }
+		        toggle = !toggle; // 상태 전환
+
+		        // UI 갱신
+		        javax.swing.SwingUtilities.invokeLater(() -> back_base.repaint());
+		    }
+		});
+		waveTimer.start();
+	}
+	
+	private JLabel getTileByIndex(int index) {
+	    switch (index) {
+	        case 7: return d_tile7;
+	        case 8: return d_tile8;
+	        case 9: return d_tile9;
+	        case 10: return d_tile10;
+	        case 11: return d_tile11;
+	        case 12: return d_tile12;
+	        default: return null; // 유효하지 않은 인덱스
+	    }
+	}
+	
+	public void reachDoorAnimation() {
+	    Thread animationThread = new Thread(() -> {
+	        while (true) {
+	            try {
+	                // 현재 타일 숨기기
+	                JLabel currentTile = getTileByIndex(currentTileIndex);
+	                if (currentTile != null) {
+	                    System.out.println("현재 타일 숨김: " + currentTileIndex);
+	                    currentTile.setVisible(false);
+	                }
+
+	                // 다음 타일 활성화
+	                currentTileIndex++;
+	        	
+	                JLabel nextTile = getTileByIndex(currentTileIndex);
+	                if (nextTile == null) {
+	                	JLabel endTile = getTileByIndex(12);
+	                	endTile.setVisible(true);
+	                    break; // `nextTile`이 null이면 스레드 종료
+	                }
+
+	                System.out.println("다음 타일 활성화: " + currentTileIndex);
+	                nextTile.setVisible(true);
+
+	                // 화면 갱신
+	                back_base.repaint();
+
+	                // 타일 전환 간격 (예: 500ms)
+	                Thread.sleep(200);
+	            } catch (InterruptedException e) {
+	                System.out.println("애니메이션 중단됨: " + e.getMessage());
+	                break;
+	            }
+	        }
+	    });
+
+	    animationThread.start();
 	}
 	
 	private void addPlatform(int id, int x, int y, int width, int height) {
@@ -213,5 +307,8 @@ public class MainMap {
 	    
 	    // Platform 13
 	    addPlatform(24, 550 , 660, 400, 50);
+	    
+	    //Platform 14
+	    addPlatform(25, 1670 , 270, 30, 40);
 	}
 }

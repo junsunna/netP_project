@@ -71,8 +71,9 @@ public class Rabbit implements Moveable{
 	int newWidth = 190;
     int newHeight= 190;
 	
-    public Rabbit(JPanel m_map, OptionPane o_pane) {
-    	this.m_map = m_map;
+    public Rabbit(MainMap mainMap, OptionPane o_pane) {
+    	this.mainMap = mainMap;
+    	m_map = mainMap.getMainMap();
     	mainMap = new MainMap();
     	this.position = new Point(140, 527);
     	character = new JLabel(); // JLabel 초기화
@@ -591,5 +592,15 @@ public class Rabbit implements Moveable{
 		    });
 		    timer.start();
 		}
+	}
+	@Override
+	public void push() {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void hold() {
+		// TODO Auto-generated method stub
+		
 	}
 }

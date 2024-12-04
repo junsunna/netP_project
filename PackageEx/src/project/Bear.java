@@ -36,6 +36,8 @@ public class Bear implements Moveable{
 	boolean idle;
 	boolean isDead;
 	boolean loop;
+	boolean hold;
+	boolean push;
 	boolean player;
 	
 	private int heart;
@@ -61,13 +63,14 @@ public class Bear implements Moveable{
     private int leftDeadIndex = 0; // 왼쪽 기본 인덱스
 	private boolean isActive = false;
 	private boolean onGround = false;
+	private boolean endDoor = false;
 
     int panelWidth = 715; 
     int mapWidth = 1800;
     int screenCenterX = panelWidth / 2;
 	int mapX = 0; // 맵의 X 좌표
 	
-    public Bear(JPanel m_map, OptionPane o_pane) {
+    public Bear(MainMap mainMap, OptionPane o_pane) {
     	this.position = new Point(10, 400);
     	character = new JLabel(); // JLabel 초기화
 	    character.setBounds(position.x, position.y, 85, 93); // 초기 위치 설정
@@ -79,9 +82,11 @@ public class Bear implements Moveable{
     	idle = false;
     	loop = false;
     	player = false;
+    	hold = false;
+    	push = false;
     	direction = Direction.RIGHT;
-    	mainMap = new MainMap();
-    	this.m_map = m_map;
+    	this.mainMap = mainMap;
+    	m_map = mainMap.getMainMap();
     	this.o_pane = o_pane;
     	heart = 3;
     	idle();
@@ -217,8 +222,17 @@ public class Bear implements Moveable{
         for (Rectangle platform : platforms) {
             if (new Rectangle(nextX, position.y, 85, 93).intersects(platform)) {
                 // 충돌 발생: 이동 제한
-                return false;
+                if (endDoor == false) {
+                    if (platform instanceof Platform && ((Platform) platform).id == 25) {
+                    	System.out.println("reachDoorAnimation() 호출됨");
+                    	mainMap.reachDoorAnimation();
+                    	endDoor = true;
+                    }
+                }
+            	return false;
+
             }
+
         }
 
         // 충돌 없으면 이동
@@ -561,5 +575,36 @@ public class Bear implements Moveable{
 		    });
 		    timer.start();
 		}
+	}
+	@Override
+	public void push() {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void hold() {
+		if (!hold) {
+			hold = true;
+	        new Thread(() -> {
+	            while (hold) { // 중력 효과
+	                if (downCharacter()) { // 호출 추가
+	                	System.out.println("바닥도착");
+	                	character.setIcon(direction == Direction.RIGHT ? i_rightIdle.get(1) : i_rightIdle.get(1));
+	                	updateCharacterPosition();
+	                	break;
+	                }
+	                updateCharacterPosition();
+                	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(1) : i_leftJump.get(1));
+	                try {
+	                    Thread.sleep(5); // 중력 효과 간격
+	                } catch (Exception e) {
+	                    System.out.println("아래쪽 이동 중 인터럽트 발생 : " + e.getMessage());
+	                }
+	            }
+	            down = false;
+	            idle(); // 땅에 착지하면 기본 상태로 전환
+	        }).start();
+		}
+		
 	}
 }

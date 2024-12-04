@@ -74,30 +74,6 @@ public class ClientGUI extends JFrame {
 		createControlPanel();
 	}
 	
-//	private void updateMap() {
-//		if (bear.left || bear.right) {
-//			
-//		}
-//	    // 캐릭터의 현재 위치
-//	    int characterX = bear.position.x;
-//	    // mapX는 맵의 위치를 나타내므로, 화면의 중앙으로 맞추기 위해 캐릭터 위치를 기준으로 이동
-//	    if (characterX > screenCenterX && mapX > -(mapWidth - panelWidth) && mapX > -(mapWidth - screenCenterX - 20)) {
-//	        // 캐릭터가 중앙을 넘어가면 맵을 오른쪽으로 이동
-//	    	screenCenterX += 20;
-//	        mapX -= 20;  // 맵을 오른쪽으로 5픽셀 이동
-//	    } else if (characterX < screenCenterX && mapX < 0) {
-//	        // 캐릭터가 중앙을 넘어가면 맵을 왼쪽으로 이동
-//	        mapX += 20;  // 맵을 왼쪽으로 5픽셀 이동
-//	    	screenCenterX -= 20;
-//	    }
-//
-//	    // 맵의 위치 업데이트
-//	    m_map.setLocation(mapX, 0);
-//	}
-
-
-
-	
 	private void createDisplayPanel() {
 		i_startB = new ImageIcon("images/background/b_start.png");
 		backgroundLabel = new JLabel(i_startB);
@@ -207,9 +183,9 @@ public class ClientGUI extends JFrame {
 				        mainMap = new MainMap();
 				        m_map = mainMap.getMainMap();
 				        
-				        bear = new Bear(m_map, oPane);
+				        bear = new Bear(mainMap, oPane);
 				        bear.setPlayer(true);
-				        rabbit = new Rabbit(m_map, oPane);
+				        rabbit = new Rabbit(mainMap, oPane);
 				    	
 				        m_map.add(bear.getCharacter());
 				        m_map.add(rabbit.getCharacter());
@@ -303,9 +279,9 @@ public class ClientGUI extends JFrame {
 				        // 플레이 화면 생성
 				        mainMap = new MainMap();
 				        m_map = mainMap.getMainMap();
-				    	rabbit = new Rabbit(m_map, oPane);
+				    	rabbit = new Rabbit(mainMap, oPane);
 				    	rabbit.setPlayer(true);
-				    	bear = new Bear(m_map, oPane);
+				    	bear = new Bear(mainMap, oPane);
 				        m_map.add(rabbit.getCharacter());
 				        m_map.add(bear.getCharacter());
 				        add(m_map);
