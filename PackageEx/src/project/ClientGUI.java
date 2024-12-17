@@ -22,7 +22,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
-import javax.swing.text.BadLocationException;
+import javax.swing.SwingUtilities;
 import javax.swing.text.DefaultStyledDocument;
 
 public class ClientGUI extends JFrame {
@@ -31,22 +31,22 @@ public class ClientGUI extends JFrame {
 	private MainMap mainMap;
 	private JPanel m_map;
 	private OptionPane oPane;
-	
-	private JLabel backgroundLabel, back_cake, back_choice;
-	private JTextPane t_display;
+	private boolean toggle = true;
+	private JLabel backgroundLabel, back_cake, back_choice, back_wait;
 	private ImageIcon i_cake, i_choice, i_startB;
 	
 	private JButton b_gameStart, b_sound;
-	private DefaultStyledDocument document;
 	
 	private String serverAddress;
 	private int serverPort;
 	
 	private Socket socket;
 	private DataOutputStream out;
+	private DataInputStream in;
 	private Thread receiveThread = null;
     private String uid;
 
+    private SoundPlayer startSound, mainSound, buttonSound;
 
     int panelWidth = 715; 
     int mapWidth = 1800;
@@ -54,10 +54,29 @@ public class ClientGUI extends JFrame {
 	int mapX = 0; // 맵의 X 좌표
     
 	public ClientGUI(String serverAddress, int serverPort) {
-		super("Client GUI");
+		super("BunnyBearClient");
 		this.serverAddress = serverAddress; 
 		this.serverPort = serverPort;
 
+		startSound = new SoundPlayer();
+		startSound.loadSound("audios/startBGM.wav"); // 사운드 파일 경로 설정
+		mainSound = new SoundPlayer();
+        mainSound.loadSound("audios/mainBGM.wav"); // 사운드 파일 경로 설정
+	    new Thread(() -> {
+	    	startSound.playSound();     // 사운드 재생
+	    	startSound.loopSound(); // 사운드 무한 반복
+	    }).start();
+		buttonSound = new SoundPlayer();
+		buttonSound.loadSound("audios/button.wav"); // 사운드 파일 경로 설정
+        
+        // 플레이 화면 생성
+        mainMap = new MainMap();
+        m_map = mainMap.getMainMap();
+        oPane = new OptionPane(mainSound);
+        
+        rabbit = new Rabbit(mainMap, oPane);
+        bear = new Bear(mainMap, oPane);
+        
 		setLayout(null);
 		buildGUI();
 		
@@ -73,6 +92,7 @@ public class ClientGUI extends JFrame {
 		createDisplayPanel();
 		createControlPanel();
 	}
+	
 	
 	private void createDisplayPanel() {
 		i_startB = new ImageIcon("images/background/b_start.png");
@@ -107,32 +127,15 @@ public class ClientGUI extends JFrame {
         setVisible(true);
 	}
 	
-//	private JPanel createInputPanel() {
-//		
-//		return panel;
-//	}
-
-	private void printDisplay(String msg) {
-//		t_display.append(msg + "\n");
-//		t_display.setCaretPosition(t_display.getDocument().getLength());
-		int len = t_display.getDocument().getLength();
-		
-		try {
-			document.insertString(len, msg + "\n", null);
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
-		
-		t_display.setCaretPosition(len);
-	}
-	
 	
 	private void createControlPanel() {
 		b_gameStart.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+			    new Thread(() -> buttonSound.playSound()).start();
 				ImageIcon i_bearButton = new ImageIcon("images/button/b_bear.png");
 				ImageIcon i_rabbitButton = new ImageIcon("images/button/b_rabbit.png");
+
 				i_choice = new ImageIcon("images/background/b_choice.png");
 				
 				back_choice = new JLabel(i_choice);
@@ -159,49 +162,74 @@ public class ClientGUI extends JFrame {
 				backgroundLabel.revalidate();
 				backgroundLabel.repaint();
 				
+				ImageIcon i_wait = new ImageIcon("images/button/wait.png");
+				back_wait = new JLabel(i_wait);
+				back_wait.setBounds(200, 280, i_wait.getIconWidth(), i_wait.getIconHeight());
+				
 				b_bear.addActionListener(new ActionListener() {
 				    @Override
 				    public void actionPerformed(ActionEvent e) {
-				    	uid = "Bear";
-				    	
-				    	// OptionPane 생성 및 GlassPane 설정
-				    	oPane = new OptionPane();
-				    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
-				        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
-				        glassPane.setLayout(null); // 레이아웃 설정
-				        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
-				        
-				        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
-				        
-				        glassPane.add(oPane.getPane()); // OptionPane 추가
-				        glassPane.setVisible(true); // GlassPane 활성화
-				        
-				        add(oPane.getPane());
-				    	// 시작 화면 삭제
-				        remove(backgroundLabel);
-				        // 플레이 화면 생성
-				        mainMap = new MainMap();
-				        m_map = mainMap.getMainMap();
-				        
-				        bear = new Bear(mainMap, oPane);
-				        bear.setPlayer(true);
-				        rabbit = new Rabbit(mainMap, oPane);
-				    	
-				        m_map.add(bear.getCharacter());
-				        m_map.add(rabbit.getCharacter());
-				        add(m_map);
 
-						setSize(1100, 738);
-				        revalidate();
-				        repaint();				        
-				        
-				        try {
-							connectToServer(rabbit);
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-				        
+						backgroundLabel.add(back_wait);
+						backgroundLabel.setComponentZOrder(back_wait, 0);
+						backgroundLabel.revalidate();
+						backgroundLabel.repaint();
+
+
+					    new Thread(() -> buttonSound.playSound()).start();
+					    
+						
+
+				        new Thread(() -> {
+				    	uid = "Bear";
+
+						try {
+							
+								connectToServer(rabbit);
+	
+				                // 서버 연결이 완료된 후 UI 업데이트 (Swing 스레드 사용)
+				                SwingUtilities.invokeLater(() -> {
+							        remove(backgroundLabel);
+							    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
+							        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
+							        glassPane.setLayout(null); // 레이아웃 설정
+							        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
+							        
+							        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
+							        
+							        glassPane.add(oPane.getPane()); // OptionPane 추가
+							        glassPane.setVisible(true); // GlassPane 활성화
+							        
+							        add(oPane.getPane());
+							    	// 시작 화면 삭제
+		
+							        bear.setPlayer(true);
+		
+							    	
+							        m_map.add(bear.getCharacter());
+							        m_map.add(rabbit.getCharacter());
+							        add(m_map);
+		
+									setSize(1100, 738);
+							        revalidate();
+							        repaint();	
+								    startSound.stopSound();
+								    new Thread(() -> {
+								        mainSound.playSound();     // 사운드 재생
+								        mainSound.loopSound(); // 사운드 무한 반복
+								    }).start();
+				                });
+							} catch (UnknownHostException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (IOException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+				        }).start(); // 새로운 스레드 시작
+
+
+	
 
 		                
 				        // 키 이벤트 처리
@@ -228,7 +256,9 @@ public class ClientGUI extends JFrame {
 						                    break;
 						                case KeyEvent.VK_A:
 						                	send(KeyMsg.KEY_A);
-						                    bear.dead();
+						                    bear.active(10);
+						                    bear.active(-10);
+						                    bear.idle();
 						                    break;
 				                	}
 				                	m_map.repaint();
@@ -259,45 +289,65 @@ public class ClientGUI extends JFrame {
 				b_rabbit.addActionListener(new ActionListener() {
 				    @Override
 				    public void actionPerformed(ActionEvent e) {
-				    	uid = "Rabbit";
-				        System.out.println("UID set to: " + uid); // UID 확인
-				        // 시작 화면 삭제
-				        remove(backgroundLabel);
-				    	// OptionPane 생성 및 GlassPane 설정
-				    	oPane = new OptionPane();
-				    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
-				        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
-				        glassPane.setLayout(null); // 레이아웃 설정
-				        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
-				        
-				        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
-				        
-				        glassPane.add(oPane.getPane()); // OptionPane 추가
-				        glassPane.setVisible(true); // GlassPane 활성화
-				        
-				        add(oPane.getPane());
-				        // 플레이 화면 생성
-				        mainMap = new MainMap();
-				        m_map = mainMap.getMainMap();
-				    	rabbit = new Rabbit(mainMap, oPane);
-				    	rabbit.setPlayer(true);
-				    	bear = new Bear(mainMap, oPane);
-				        m_map.add(rabbit.getCharacter());
-				        m_map.add(bear.getCharacter());
-				        add(m_map);
-				        
-						setSize(1100, 738);				        
-				        revalidate();
-				        repaint();
-				    	
-				        try {
-							connectToServer(bear);
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
+				    	new Thread(() -> buttonSound.playSound()).start();
+					    startSound.stopSound();
 
-		                
+						backgroundLabel.add(back_wait);
+						backgroundLabel.setComponentZOrder(back_wait, 0);
+						backgroundLabel.revalidate();
+						backgroundLabel.repaint();
+
+					
+				    	uid = "Rabbit";
+
+
+
+				    	// OptionPane 생성 및 GlassPane 설정
+
+				        new Thread(() -> {
+							try {
+								connectToServer(bear);
+							
+	
+						        remove(backgroundLabel);
+						        
+						    	oPane.setMainFrame(ClientGUI.this); // 현재 프레임 참조 전달
+						        JComponent glassPane = (JComponent) getGlassPane(); // GlassPane 가져오기
+						        glassPane.setLayout(null); // 레이아웃 설정
+						        glassPane.setBounds(0, 0, 1100, 738); // 크기 명시적으로 설정
+						        
+						        oPane.getPane().setBounds(0, 0, 1100, 738); // OptionPane 크기 설
+						        
+						        glassPane.add(oPane.getPane()); // OptionPane 추가
+						        glassPane.setVisible(true); // GlassPane 활성화
+						        
+						        add(oPane.getPane());
+						        // 플레이 화면 생성
+	
+						    	rabbit.setPlayer(true);
+	
+						        m_map.add(rabbit.getCharacter());
+						        m_map.add(bear.getCharacter());
+						        add(m_map);
+						        
+								setSize(1100, 738);				        
+						        revalidate();
+						        repaint();	
+							} catch (UnknownHostException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (IOException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+	
+						    startSound.stopSound();
+						    new Thread(() -> {
+						        mainSound.playSound();     // 사운드 재생
+						        mainSound.loopSound(); // 사운드 무한 반복
+						    }).start();
+				        }).start();
+						
 				        // 키 이벤트 처리
 				        addKeyListener(new KeyAdapter() {
 				            @Override
@@ -315,6 +365,7 @@ public class ClientGUI extends JFrame {
 						                	send(KeyMsg.KEY_RIGHT);
 						                	rabbit.right();
 //						                	updateMap();
+						                	
 						                	break;
 						                case KeyEvent.VK_SPACE:
 						                	send(KeyMsg.KEY_SPACE);
@@ -322,8 +373,12 @@ public class ClientGUI extends JFrame {
 						                    break;
 						                case KeyEvent.VK_A:
 						                	send(KeyMsg.KEY_A);
-						                	rabbit.dead();
+						                	rabbit.active(90);
+						                	rabbit.active(-10);
 						                    break;
+						                case KeyEvent.VK_S:
+						                	send(KeyMsg.KEY_S);
+						                	rabbit.push();
 				                	}
 				                	m_map.repaint();
 				            }
@@ -353,7 +408,18 @@ public class ClientGUI extends JFrame {
 		b_sound.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("사운드 설정을 변경합니다!");
+			    new Thread(() -> buttonSound.playSound()).start();
+            	if (toggle) {
+            		startSound.stopSound();
+            		toggle = false;
+            	} else {
+				    new Thread(() -> {
+				    	startSound.playSound();     // 사운드 재생
+				    	startSound.loopSound(); // 사운드 무한 반복
+				    }).start();
+            		toggle = true;
+            	}
+            	
             }
         });
 	}
@@ -364,15 +430,21 @@ public class ClientGUI extends JFrame {
 	        SocketAddress sa = new InetSocketAddress(serverAddress, serverPort);
 	        socket.connect(sa, 3000);
 	        out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-
+	        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
 	        System.out.println("Sending UID: " + uid); // UID 확인
             out.writeUTF(uid);
             out.flush();
-	        
+            
+            String serverMessage;
+            while (true) {
+                serverMessage = in.readUTF().trim();
+                if ("GAME_START".equals(serverMessage)) {
+                    System.out.println("GAME_START 메시지 수신. 게임을 시작합니다.");
+                    break; // GAME_START 수신 시 루프 종료
+                }
+            }
 	        receiveThread = new Thread(new Runnable() {
-	            private DataInputStream in;
 	            String inMsg;
-
 	            private void receiveMessage() {
 	                try {
 	                    inMsg = in.readUTF();
@@ -381,27 +453,30 @@ public class ClientGUI extends JFrame {
 
 	                    switch (key) {
 	                        case KEY_LEFT:
+	                        	character.setIdle();
 	                            character.left();
 	                            break;
 	                        case KEY_RIGHT:
+	                        	character.setIdle();
 	                            character.right();
 	                            break;
 	                        case KEY_SPACE:
 	                            character.up();
 	                            break;
 	                        case KEY_A:
-	                            character.dead();
+	                            character.active(90);
+	                            character.active(-10);
 	                            break;
 	                        case KEY_LEFT_RELEASED:
 	                        	character.left_released();
-	                            character.idle();
-	                            character.initIndex();
 	                            break;
 	                        case KEY_RIGHT_RELEASED:
 	                        	character.right_released();
-	                            character.idle();
-	                            character.initIndex();
 	                            break;
+			                case KEY_S:
+			                	character.push();
+			    
+			                	break;
 	                        default:
 	                            System.err.println("Unhandled KeyMsg: " + key);
 	                            break;
@@ -429,12 +504,12 @@ public class ClientGUI extends JFrame {
 	        });
 	        receiveThread.start();
 	    } catch (UnknownHostException e) {
-	        printDisplay("알 수 없는 서버");
+//	        printDisplay("알 수 없는 서버");
 	        e.printStackTrace();
 	    } catch (SocketTimeoutException e) {
-	        printDisplay("서버와의 연결 오류: Connect timed out");
+//	        printDisplay("서버와의 연결 오류: Connect timed out");
 	    } catch (IOException e) {
-	        printDisplay("서버 연결 오류");
+//	        printDisplay("서버 연결 오류");
 	    }
 	}
 

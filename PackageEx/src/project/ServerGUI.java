@@ -2,7 +2,6 @@ package project;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
@@ -15,11 +14,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -38,11 +40,12 @@ public class ServerGUI extends JFrame {
 	
 	private Thread acceptThread = null;
 	
-	private Vector<ClientHandler> users = new Vector<ClientHandler>();
-	private Map<String, ClientHandler> clientMap = new HashMap<>();  // 클라이언트 ID를 관리
-	
+    private Vector<ClientHandler> users = new Vector<>();
+    private Map<String, ClientHandler> clientMap = new ConcurrentHashMap<>();
+    private List<ClientHandler> waitingClients = Collections.synchronizedList(new ArrayList<>()); // 대기 중인 클라이언트 목록
+
 	public ServerGUI(int port) {
-		super("Server GUI");
+		super("BunnyBearServer");
 		
 		this.port = port;
 		users = new Vector<>();
@@ -215,113 +218,129 @@ public class ServerGUI extends JFrame {
 		t_display.setCaretPosition(len);
 	}
 	
-	private class ClientHandler extends Thread {
-		private Socket clientSocket;
-		private DataOutputStream out;
-		private DataInputStream in;
-		private String uid;
-		
-		public ClientHandler(Socket clientSocket) {
-			this.clientSocket = clientSocket;
-		}
-		
-		private void receiveMessages(Socket cs) {
-			try {
-				in = new DataInputStream(new BufferedInputStream(cs.getInputStream()));
-				out = new DataOutputStream(new BufferedOutputStream(cs.getOutputStream()));
-				
-                // 클라이언트 ID 설정
-                out.writeUTF("Please provide your UID (e.g., Rabbit or Bear):");
-                out.flush();
+	public class ClientHandler extends Thread {
+	    private Socket clientSocket;
+	    private DataOutputStream out;
+	    private DataInputStream in;
+	    private String uid; // uniqueUid
+	    private String baseUid; // 기본 UID
+	    private ClientHandler pairedClient; // 페어링된 상대 클라이언트
 
-                // 클라이언트가 보낸 UID 수신
-                this.uid = in.readUTF().trim();
-                System.out.println("클라이언트 UID: " + uid);
+	    public ClientHandler(Socket clientSocket) {
+	        this.clientSocket = clientSocket;
+	    }
 
-                // 클라이언트 ID를 Map에 추가
-                clientMap.put(uid, this);
-                
-                System.out.println("Client " + uid + " connected and added to clientMap.");
-                
-	            String receivedMessage;
-	            KeyMsg keyMsg;
-	            while ((receivedMessage = in.readUTF()) != null) {
-	                try {
-	                    receivedMessage = receivedMessage.trim().toUpperCase(); // 문자열 정리
-	                    keyMsg = KeyMsg.valueOf(receivedMessage); // KeyMsg로 변환
-	                    
-	                    // 받은 메시지를 브로드캐스트
-	                    broadcasting(keyMsg);
-	                } catch (IllegalArgumentException e) {
-	                    System.err.println("Invalid KeyMsg received: " + receivedMessage);
+	    private void receiveMessages() {
+	        try {
+	            in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
+	            out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
+
+	            // BaseUid 요청 및 UID 생성
+	            baseUid = in.readUTF().trim();
+	            uid = baseUid + "-" + UUID.randomUUID().toString().substring(0, 8);
+	            printDisplay("클라이언트 연결됨: " + uid);
+
+	            clientMap.put(uid, this); // 클라이언트 추가
+
+	            // 대기열에 추가 및 매칭 시도
+	            synchronized (waitingClients) {
+	                waitingClients.add(this);
+	                checkForPairing();
+	            }
+
+	            // 메시지 수신 및 전달
+	            String message;
+	            while ((message = in.readUTF()) != null) {
+	                if (pairedClient != null) {
+	                    // 페어링된 상대방이 있을 경우 메시지를 전달
+	                    sendToPairedClient(message);
+	                } else {
+	                    printDisplay("페어링되지 않은 클라이언트가 메시지를 보냈습니다: " + message);
 	                }
 	            }
-				
-				users.removeElement(this);
-				printDisplay(uid + " 퇴장, 현재 참가자 수: " + users.size());
-			} catch (IOException e) {
-				System.err.println("클라이언트 연결 문제> " + e.getMessage());
-			} 
-			finally {
-				printDisplay(uid + "가 연결을 종료했습니다.");
-				System.out.println("클라이언트가 연결을 종료했습니다.");
-				users.remove(this);
-	            clientMap.remove(uid);
-				try {
-					cs.close();
-				} 
-				catch (IOException e) {
-					System.err.println("서버 닫기 오류> " + e.getMessage());
-					System.exit(-1);
-				}
-			}
-		}
-		
-		private void send(KeyMsg msg) {
-		    if (msg == null) {
-		        System.err.println("Invalid KeyMsg: null");
-		        return;
-		    }
-			try {
-				out.writeUTF(msg.name());
-				out.flush();
-			} catch (IOException e) {
-				System.err.println("클라이언트 일반 전송 오류> " + e.getMessage());
-			}
-		}
-        private void sendToSpecificClient(String targetId, KeyMsg msg) {
-            ClientHandler targetClient = clientMap.get(targetId);
-            System.out.println("Current clientMap: " + clientMap);
-            if (targetClient != null) {
-                targetClient.send(msg);
-            } else if (uid.equals("Bear")) {
-                System.err.println("대상 클라이언트를 찾을 수 없습니다: " + targetId);
-            }else {
-                System.err.println("Both Rabbit and Bear must be connected to send messages.");
-            }
-        }
-		
-		
-		private void broadcasting(KeyMsg msg) {
-	        if (msg == null) {
-	            System.err.println("Cannot broadcast null KeyMsg");
-	            return;
+	        } catch (IOException e) {
+	            printDisplay("클라이언트 연결 오류: " + e.getMessage());
+	        } finally {
+	            cleanup();
 	        }
-            // 이 메서드는 동일한 쌍의 클라이언트에게만 메시지를 보냄
-            if (uid.equals("Rabbit")) {
-                sendToSpecificClient("Bear", msg);  // Rabbit -> Bear
-            } else if (uid.equals("Bear")) {
-                sendToSpecificClient("Rabbit", msg);  // Bear -> Rabbit
-            }
-		}
-		
-		@Override
-		public void run() {
-			receiveMessages(clientSocket);
-		}
+	    }
+
+	    private void checkForPairing() {
+	        synchronized (waitingClients) {
+	            for (ClientHandler client : waitingClients) {
+	                if (!client.equals(this) && isOppositeBase(client)) {
+	                    try {
+	                        // 페어링되면 서로의 pairedClient를 설정
+	                        this.pairedClient = client;
+	                        client.pairedClient = this;
+
+	                        // 페어링 및 게임 시작
+	                        notifyPairingAndStartGame(client);
+	                        waitingClients.remove(client);
+	                        waitingClients.remove(this);
+
+	                        break; // 페어링 후 루프 종료
+	                    } catch (IOException e) {
+	                        printDisplay("짝 연결 오류: " + e.getMessage());
+	                    }
+	                }
+	            }
+	        }
+	    }
+
+	    private boolean isOppositeBase(ClientHandler client) {
+	        return (this.baseUid.equals("Rabbit") && client.baseUid.equals("Bear")) ||
+	               (this.baseUid.equals("Bear") && client.baseUid.equals("Rabbit"));
+	    }
+
+	    private void notifyPairingAndStartGame(ClientHandler pairedClient) throws IOException {
+	        this.pairedClient = pairedClient; // 페어링된 상대 저장
+
+	        // 상대에게도 게임 시작 신호 전송
+	        out.writeUTF("GAME_START");
+	        pairedClient.out.writeUTF("GAME_START");
+
+	        out.flush();
+	        pairedClient.out.flush();
+
+	        printDisplay("짝 연결됨: " + uid + " <-> " + pairedClient.uid + " | 게임 시작");
+	    }
+
+	    private void sendToPairedClient(String message) {
+	        if (pairedClient != null) {
+	            try {
+	                pairedClient.out.writeUTF(message);
+	                pairedClient.out.flush();
+	                printDisplay(uid + " -> " + pairedClient.uid + ": " + message);
+	            } catch (IOException e) {
+	                printDisplay("메시지 전달 오류: " + e.getMessage());
+	            }
+	        } else {
+	            printDisplay("페어링되지 않은 클라이언트에게 메시지를 전달할 수 없습니다.");
+	        }
+	    }
+
+	    private void cleanup() {
+	        try {
+	            clientMap.remove(uid);
+	            synchronized (waitingClients) {
+	                waitingClients.remove(this);
+	            }
+	            if (pairedClient != null) {
+	                pairedClient.pairedClient = null; // 상대방의 페어링도 해제
+	            }
+	            clientSocket.close();
+	            printDisplay("클라이언트 연결 종료: " + uid);
+	        } catch (IOException e) {
+	            printDisplay("클라이언트 종료 오류: " + e.getMessage());
+	        }
+	    }
+
+	    @Override
+	    public void run() {
+	        receiveMessages();
+	    }
 	}
-	
-	
 
 	public static void main(String[] args) {
 		int port = 54321;

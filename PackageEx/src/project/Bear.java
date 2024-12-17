@@ -6,6 +6,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -24,6 +25,8 @@ public class Bear implements Moveable{
     public static final String basePath = "images/move/bear";
     public static final String LEFT_AIR_MOVE = "LEFT_AIR_MOVE";
     public static final String RIGHT_AIR_MOVE = "RIGHT_AIR_MOVE";
+    public static final int charWidth = 85;
+    public static final int charHeight = 93;
     Point position;
 	Direction direction;
     private MainMap mainMap;
@@ -41,10 +44,11 @@ public class Bear implements Moveable{
 	boolean player;
 	
 	private int heart;
-	private final int SPEED = 4;
-	private final int JUMPSPEED = 2;
+	private final int SPEED = 6;
+	private final int JUMPSPEED = 1;
     
     private JLabel character;
+    private Map<Integer, JLabel> bulletTiles;
     private ArrayList<ImageIcon> i_rightMove; // 오른쪽 이동
     private ArrayList<ImageIcon> i_leftMove; // 왼쪽 이동
     private ArrayList<ImageIcon> i_leftJump; // 왼쪽 점프
@@ -64,7 +68,17 @@ public class Bear implements Moveable{
 	private boolean isActive = false;
 	private boolean onGround = false;
 	private boolean endDoor = false;
+	private boolean switch1 = false;
+	private boolean switch2 = false;
+	private boolean switch3 = false;
 
+	private int walkToggle = 0;
+	
+	private Map<Integer, Rectangle> platforms;
+	
+    private SoundPlayer walkSound, bulletSound, jumpSound, deadSound, throwSound;
+    
+	
     int panelWidth = 715; 
     int mapWidth = 1800;
     int screenCenterX = panelWidth / 2;
@@ -73,7 +87,7 @@ public class Bear implements Moveable{
     public Bear(MainMap mainMap, OptionPane o_pane) {
     	this.position = new Point(10, 400);
     	character = new JLabel(); // JLabel 초기화
-	    character.setBounds(position.x, position.y, 85, 93); // 초기 위치 설정
+	    character.setBounds(position.x, position.y, charWidth, charHeight); // 초기 위치 설정
     	loadMoveImage();
     	left = false;
     	right = false;
@@ -88,9 +102,25 @@ public class Bear implements Moveable{
     	this.mainMap = mainMap;
     	m_map = mainMap.getMainMap();
     	this.o_pane = o_pane;
+    	platforms = mainMap.getPlatforms();
     	heart = 3;
     	idle();
     	gameLoop();
+		walkSound = new SoundPlayer();
+		walkSound.loadSound("audios/walk.wav"); // 사운드 파일 경로 설정
+		jumpSound = new SoundPlayer();
+		jumpSound.loadSound("audios/jump.wav"); // 사운드 파일 경로 설정
+		deadSound = new SoundPlayer();
+		deadSound.loadSound("audios/dead1.wav"); // 사운드 파일 경로 설정
+		bulletSound = new SoundPlayer();
+		bulletSound.loadSound("audios/bullet.wav"); // 사운드 파일 경로 설정
+		throwSound = new SoundPlayer();
+		throwSound.loadSound("audios/throw.wav"); // 사운드 파일 경로 설정
+    }
+    
+    @Override
+    public Rectangle getPosition() {
+        return new Rectangle(position.x, position.y, charWidth, charHeight);
     }
     public JLabel getCharacter() {
         return character;
@@ -129,22 +159,22 @@ public class Bear implements Moveable{
         for (int i = 1; i <= 12; i++) { // 0부터 11까지
         	String filePath = basePath + "/move_left/left" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(71, charHeight, Image.SCALE_SMOOTH);
             ImageIcon leftMove = new ImageIcon(s_image);
             
             String filePath1 = basePath + "/move_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath1);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(71, charHeight, Image.SCALE_SMOOTH);
             ImageIcon rightMove = new ImageIcon(s_image);  
             
             String filePath2 = basePath + "/idle_left/left" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath2);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(71, charHeight, Image.SCALE_SMOOTH);
             ImageIcon leftIdle = new ImageIcon(s_image);
             
             String filePath3 = basePath + "/idle_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath3);
-            s_image = o_icon.getImage().getScaledInstance(71, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(71, charHeight, Image.SCALE_SMOOTH);
             ImageIcon rightIdle = new ImageIcon(s_image); 
 
             if (leftMove.getIconWidth() == -1) {
@@ -172,11 +202,11 @@ public class Bear implements Moveable{
         for (int i = 1; i <= 2; i++) {
         	String filePath4 = basePath + "/jump_left/jump" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath4);
-            s_image = o_icon.getImage().getScaledInstance(85, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(charWidth, charHeight, Image.SCALE_SMOOTH);
         	ImageIcon leftJump = new ImageIcon(s_image);
         	String filePath5 = basePath + "/jump_right/jump" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath5);
-            s_image = o_icon.getImage().getScaledInstance(85, 93, Image.SCALE_SMOOTH);
+            s_image = o_icon.getImage().getScaledInstance(charWidth, charHeight, Image.SCALE_SMOOTH);
         	ImageIcon rightJump = new ImageIcon(s_image);
         	
         	if (leftJump.getIconWidth() == -1) {
@@ -191,7 +221,7 @@ public class Bear implements Moveable{
         	}
         }
         int newHeight = 100; // 원하는 높이
-        for (int i = 1; i <= 8; i++) {
+        for (int i = 1; i <= 10; i++) {
         	String filePath6 = basePath + "/dead_left/left" + String.format("%02d.png", i);
         	String filePath7 = basePath + "/dead_right/right" + String.format("%02d.png", i);
             o_icon = new ImageIcon(filePath6);
@@ -214,20 +244,19 @@ public class Bear implements Moveable{
         }
     }
     
+
+    
     // 캐릭터 이동
     private boolean moveCharacter(int deltaX) {
         int nextX = position.x + deltaX;
-        List<Rectangle> platforms = mainMap.getPlatforms();
         // 좌우 충돌 확인
-        for (Rectangle platform : platforms) {
-            if (new Rectangle(nextX, position.y, 85, 93).intersects(platform)) {
-                // 충돌 발생: 이동 제한
-                if (endDoor == false) {
-                    if (platform instanceof Platform && ((Platform) platform).id == 25) {
-                    	System.out.println("reachDoorAnimation() 호출됨");
-                    	mainMap.reachDoorAnimation();
-                    	endDoor = true;
-                    }
+        checkBullet();
+        
+        for (Rectangle platform : platforms.values()) {
+            if (new Rectangle(nextX, position.y, charWidth, charHeight).intersects(platform)) {
+                if (((Platform) platform).id >= 32 && ((Platform) platform).id <= 38 ) {
+                	  mainMap.reachCoin(((Platform) platform).id);
+                	  return true;
                 }
             	return false;
 
@@ -264,35 +293,66 @@ public class Bear implements Moveable{
     
     private boolean upCharacter() {
         position.y -= JUMPSPEED; // 위로 이동
-
-        List<Rectangle> platforms = mainMap.getPlatforms();
-    	for (Rectangle platform : platforms) {
-    		if (new Rectangle(position.x, position.y - JUMPSPEED, 85, 93).intersects(platform)) {
-    			 if (position.y + 50 > platform.y && position.y < platform.y + platform.height) {
-    	                position.y += JUMPSPEED; // 플랫폼 위로 이동
-    	                return true; // 더 이상 충돌 확인 불필요
-    	            }
-    	            onGround = false; // 점프 중이므로 착지 상태는 false
-    	            
+        
+        checkBullet();
+    	for (Rectangle platform : platforms.values()) {
+    		if (new Rectangle(position.x, position.y, charWidth, charHeight).intersects(platform)) {
+                if (((Platform) platform).id >= 32 && ((Platform) platform).id <= 38 ) {
+                	  mainMap.reachCoin(((Platform) platform).id);
+                	  return false;
+                  }
+    			if (position.y + 50 > platform.y && position.y < platform.y + platform.height) {
+	                position.y += JUMPSPEED; // 플랫폼 위로 이동
+	                return true; // 더 이상 충돌 확인 불필요
+	            }
+            	if (!switch2 && ((Platform) platform).id == 18) {
+            	    mainMap.dynamicButton(17);
+            	    switch2 = true; // 플래그를 즉시 갱신
+            	    return true;
+            	}
+	            onGround = false; // 점프 중이므로 착지 상태는 false
+    	        
     	        }
     	    }
 
     	return false;
     }
     
+    private void checkBullet() {
+        bulletTiles = mainMap.getBullet();
+        for (Map.Entry<Integer, JLabel> entry : bulletTiles.entrySet()) {
+            JLabel bulletLabel = entry.getValue();
+            Rectangle bulletBounds = bulletLabel.getBounds(); // bullet의 위치와 크기
+
+            // 충돌 여부 확인
+            if (new Rectangle(position.x + 10, position.y - 10, charWidth - 20, charHeight - 10).intersects(bulletBounds)) {
+            	new Thread(() -> bulletSound.playSound()).start();
+            	dead();
+            	return;
+            }
+        }
+    }
+    
     private boolean downCharacter() {
         position.y += JUMPSPEED; // 중력 효과로 아래로 이동
-        List<Rectangle> platforms = mainMap.getPlatforms();
-
-        for (Rectangle platform : platforms) {
+        
+        checkBullet();
+        
+        for (Rectangle platform : platforms.values()) {
             // 충돌 확인
-            if (new Rectangle(position.x, position.y + JUMPSPEED, 85, 93).intersects(platform)) {
+            if (new Rectangle(position.x, position.y, charWidth, charHeight).intersects(platform)) {
+                if (((Platform) platform).id >= 32 && ((Platform) platform).id <= 38 ) {
+              	  	mainMap.reachCoin(((Platform) platform).id);
+              	  	onGround = false;
+              	  	return false;
+                }
                 position.y -= JUMPSPEED; // 캐릭터 크기 고려
                 onGround = true; // 착지 상태 설정
                 
-                if (platform instanceof Platform && ((Platform) platform).id == 24) {
-                	dead();
-                }
+              if (((Platform) platform).id == 24 || ((Platform) platform).id == 30 ) {
+               	dead();
+              }
+                
                 return true; // 충돌 후 더 이상 확인 불필요
             }
         }
@@ -307,6 +367,7 @@ public class Bear implements Moveable{
 			onGround = false;
 			up = true;
 	        new Thread(() -> {
+			    new Thread(() -> jumpSound.playSound()).start();
 	            for (int i = 0; i < 120; i++) {
                     if (!upCharacter()) { // 호출 추가
                     	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(0) : i_leftJump.get(0));
@@ -315,7 +376,7 @@ public class Bear implements Moveable{
                     	break;
 	                
 	                try {
-	                    Thread.sleep(5);
+	                    Thread.sleep(1);
 	                } catch (Exception e) {
 	                    System.out.println("위쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 	                }
@@ -334,14 +395,18 @@ public class Bear implements Moveable{
 	            while (!onGround) { // 중력 효과
 	                if (downCharacter()) { // 호출 추가
 	                	System.out.println("바닥도착");
-	                	character.setIcon(direction == Direction.RIGHT ? i_rightIdle.get(1) : i_rightIdle.get(1));
+	                	if (!isDead) {
+	                		character.setIcon(direction == Direction.RIGHT ? i_rightIdle.get(1) : i_leftIdle.get(1));
+	                	}
 	                	updateCharacterPosition();
 	                	break;
 	                }
 	                updateCharacterPosition();
-                	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(1) : i_leftJump.get(1));
+	                if (!isDead) {
+	                	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(1) : i_leftJump.get(1));
+	                }
 	                try {
-	                    Thread.sleep(5); // 중력 효과 간격
+	                    Thread.sleep(1); // 중력 효과 간격
 	                } catch (Exception e) {
 	                    System.out.println("아래쪽 이동 중 인터럽트 발생 : " + e.getMessage());
 	                }
@@ -354,6 +419,7 @@ public class Bear implements Moveable{
 
 	@Override
 	public void left() {
+
 		if (!left) {
 			left = true;
 			direction = Direction.LEFT;
@@ -371,6 +437,11 @@ public class Bear implements Moveable{
 					if (!up && !down) {
 						leftMoveIndex = (leftMoveIndex + 1) % i_leftMove.size();
 						character.setIcon(i_leftMove.get(leftMoveIndex));
+						walkToggle++;
+						if (walkToggle == 4) {
+						    new Thread(() -> walkSound.playSound()).start();
+							walkToggle = 0;
+						}
 					}
 					try {
 						Thread.sleep(30);
@@ -401,6 +472,12 @@ public class Bear implements Moveable{
 					if (!up && !down) {
 						rightMoveIndex = (rightMoveIndex + 1) % i_rightMove.size();
 						character.setIcon(i_rightMove.get(rightMoveIndex));
+						walkToggle++;
+						if (walkToggle == 4) {
+						    new Thread(() -> walkSound.playSound()).start();
+
+							walkToggle = 0;
+						}
 					}
 					try {
 						Thread.sleep(30);
@@ -418,15 +495,18 @@ public class Bear implements Moveable{
 			idle = true;
 			new Thread(() -> {
 				while (idle) {
+					checkBullet();
 					if (direction == Direction.LEFT && !up && !down && !right && !left) {
-				          updateCharacterPosition();
-				          leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
-				          character.setIcon(i_leftIdle.get(leftIdleIndex));
-						} else if (direction == Direction.RIGHT && !up && !down && !right && !left) {
-				          updateCharacterPosition();
-				          rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
-				          character.setIcon(i_rightIdle.get(rightIdleIndex));
-						}
+						
+						updateCharacterPosition();
+						leftIdleIndex = (leftIdleIndex + 1) % i_leftIdle.size();
+						character.setIcon(i_leftIdle.get(leftIdleIndex));
+					} else if (direction == Direction.RIGHT && !up && !down && !right && !left) {
+						updateCharacterPosition();
+						rightIdleIndex = (rightIdleIndex + 1) % i_rightIdle.size();
+						character.setIcon(i_rightIdle.get(rightIdleIndex));
+					}
+					
 					try {
 						Thread.sleep(30);
 					} catch (Exception e) {
@@ -439,20 +519,21 @@ public class Bear implements Moveable{
 	@Override
 	public void dead() {
 		if (isDead) return;
+		isDead = true;
+	    new Thread(() -> deadSound.playSound()).start();
 		idle = true;
 		left = true;
 		right = true;
 		up = true;
 		down = true;
-		isDead = true;
 		heart -= 1;
 		o_pane.updateHeart(heart);
 		new Thread(() -> {
 			if (direction == Direction.LEFT) {
 				for (int i = 0; i < i_rightDead.size() * 10; i++) {
-//					position.x = position.x + 1;
+					position.x = position.x + 1;
 					position.y = position.y - 1;
-					if (i % 20 == 0) {
+					if (i % 20 == 0 && rightDeadIndex < 5) {
 						rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
 						character.setIcon(i_rightDead.get(rightDeadIndex));
 					}
@@ -466,11 +547,11 @@ public class Bear implements Moveable{
 				int delay = 0;
 				while (true) {
 					delay++;
-					if (downCharacter()) break;
-//					position.x = position.x + 1;
 					position.y = position.y + 1;
-					if (delay % 20 == 0) {
+					if (downCharacter()) break;
+					if (delay % 20 == 0 && rightDeadIndex != 0) {
 						rightDeadIndex = (rightDeadIndex + 1) % i_rightDead.size();
+						
 						if (rightDeadIndex == 0) {
 							updateCharacterPosition();
 			        		continue;
@@ -487,10 +568,10 @@ public class Bear implements Moveable{
 				}
 			} else if (direction == Direction.RIGHT) {
 				for (int i = 0; i < i_leftDead.size() * 10; i++) {
-//					position.x = position.x - 1;
+					position.x = position.x - 1;
 					position.y = position.y - 1;
 			        
-					if (i % 20 == 0) {
+					if (i % 20 == 0 && leftDeadIndex < 5) {
 						leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
 			        	character.setIcon(i_leftDead.get(leftDeadIndex));
 					}
@@ -504,10 +585,10 @@ public class Bear implements Moveable{
 				int delay = 0;
 				while (true) {
 					delay++;
-					if (downCharacter()) break;
-//					position.x = position.x - 1;
 					position.y = position.y + 1;
-					if (delay % 20 == 0) {
+					if (downCharacter()) break;
+					if (delay % 20 == 0 && leftDeadIndex != 0) {
+						
 						leftDeadIndex = (leftDeadIndex + 1) % i_leftDead.size();
 						if (leftDeadIndex == 0) {
 							updateCharacterPosition();
@@ -545,22 +626,25 @@ public class Bear implements Moveable{
 	    	isDead = false;
 	        idle();
 	        
+	        if (player) {
 	        // 맵 초기화
-	        mapX = 0; // 맵의 초기 X 위치
-	        screenCenterX = panelWidth / 2; // 화면 중앙 초기화
-	        m_map.setLocation(mapX, 0); // 맵의 위치 업데이트
+	        	mapX = 0; // 맵의 초기 X 위치
+	        	screenCenterX = panelWidth / 2; // 화면 중앙 초기화
+	        	m_map.setLocation(mapX, 0); // 맵의 위치 업데이트
+	        }
 		}).start();	
 	}
 	@Override
 	public void left_released() {
     	left = false;
     	idle();
+    	initIndex();
 	}
 	@Override
 	public void right_released() {
     	right = false;
     	idle();
-		
+    	initIndex();
 	}
 	public void gameLoop() {
 		if (!loop) {
@@ -578,33 +662,44 @@ public class Bear implements Moveable{
 	}
 	@Override
 	public void push() {
-		// TODO Auto-generated method stub
-		
 	}
+
 	@Override
-	public void hold() {
-		if (!hold) {
-			hold = true;
-	        new Thread(() -> {
-	            while (hold) { // 중력 효과
-	                if (downCharacter()) { // 호출 추가
-	                	System.out.println("바닥도착");
-	                	character.setIcon(direction == Direction.RIGHT ? i_rightIdle.get(1) : i_rightIdle.get(1));
-	                	updateCharacterPosition();
-	                	break;
-	                }
-	                updateCharacterPosition();
-                	character.setIcon(direction == Direction.RIGHT ? i_rightJump.get(1) : i_leftJump.get(1));
-	                try {
-	                    Thread.sleep(5); // 중력 효과 간격
-	                } catch (Exception e) {
-	                    System.out.println("아래쪽 이동 중 인터럽트 발생 : " + e.getMessage());
-	                }
-	            }
-	            down = false;
-	            idle(); // 땅에 착지하면 기본 상태로 전환
-	        }).start();
-		}
-		
+    public void active(int deltaX) {
+        int nextX = position.x + deltaX;
+        for (Rectangle platform : platforms.values()) {
+            if (new Rectangle(nextX, position.y, charWidth, charHeight).intersects(platform)) {
+                // 충돌 발생: 이동 제한
+            	if (!endDoor && ((Platform) platform).id == 25) {
+            	    mainMap.reachDoorAnimation();
+            	    endDoor = true; // 플래그를 즉시 갱신
+            	}
+            	
+            	if (!switch1 && ((Platform) platform).id == 26) {
+            	    mainMap.dynamicSwitch();
+            	    mainMap.removePlatform(26);
+            	    switch1 = true; // 플래그를 즉시 갱신
+            	}
+            	if (!switch3 && ((Platform) platform).id == 29) {
+            	    mainMap.dynamicButton(19);
+            	    switch3 = true; // 플래그를 즉시 갱신
+            	}
+            }
+
+        }
+    }
+
+	@Override
+	public void setIdle() {
+		idle = false;
 	}
+
+//	@Override
+//	public boolean throw_active() {
+//		if (new Rectangle(position.x + 10, position.y - 10, charWidth - 20, charHeight - 10).intersects(rabbit.getPosition())) {
+//			new Thread(() -> throwSound.playSound()).start();
+//			return true;
+//		}
+//		return false;
+//	}
 }

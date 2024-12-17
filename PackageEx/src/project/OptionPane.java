@@ -18,11 +18,13 @@ public class OptionPane {
     private JLabel[] heartLabels; // 하트 라벨 배열
     protected JButton b_setting, b_continue, b_exit, b_sound;
     private JFrame mainFrame;
-
+    private SoundPlayer mainSound, buttonSound;
+    private boolean toggle = true;
     public void setMainFrame(JFrame frame) {
         this.mainFrame = frame;
     }
-	OptionPane() {
+	OptionPane(SoundPlayer mainSound) {
+		this.mainSound = mainSound;
 		// 1. JLayeredPane 생성
 		layeredPane = new JLayeredPane();
         layeredPane.setLayout(null);
@@ -30,11 +32,14 @@ public class OptionPane {
         // 2. 하트 라벨 생성
         heartLabels = new JLabel[3];
         for (int i = 0; i < heartLabels.length; i++) {
-            heartLabels[i] = new JLabel(new ImageIcon(dBasePath + "18.png")); // 기본 이미지
+            heartLabels[i] = new JLabel(new ImageIcon(dBasePath + "23.png")); // 기본 이미지
             heartLabels[i].setBounds(10 + i * 50, 10, 40, 35); // 좌측 상단에 나란히 배치
             layeredPane.add(heartLabels[i], Integer.valueOf(2)); // 상위 레이어
         }
         
+		buttonSound = new SoundPlayer();
+		buttonSound.loadSound("audios/button.wav"); // 사운드 파일 경로 설정
+		
         // 버튼 추가
         JButton b_setting = new JButton(new ImageIcon(bBasePath + "setting.png"));
         b_setting.setBorderPainted(false);  // 버튼 테두리 제거
@@ -43,6 +48,7 @@ public class OptionPane {
         b_setting.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+			    new Thread(() -> buttonSound.playSound()).start();
                 JPanel darkBackground = new JPanel();
                 darkBackground.setBounds(0, 0, layeredPane.getWidth(), layeredPane.getHeight());
                 darkBackground.setBackground(new Color(0, 0, 0, 150)); // 반투명한 검정색
@@ -68,6 +74,7 @@ public class OptionPane {
                 
                 // 버튼 동작 정의
                 b_continue.addActionListener(ev -> {
+    			    new Thread(() -> buttonSound.playSound()).start();
                     layeredPane.remove(darkBackground); // 어두운 배경 제거
                     if (mainFrame != null) {
 //                        mainFrame.getGlassPane().setVisible(false); // GlassPane 비활성화
@@ -77,11 +84,18 @@ public class OptionPane {
                 });
 
                 b_exit.addActionListener(ev -> {
+    			    new Thread(() -> buttonSound.playSound()).start();
                     System.exit(0); // 프로그램 종료
                 });
 
                 b_sound.addActionListener(ev -> {
-                    System.out.println("사운드 설정");
+    			    new Thread(() -> buttonSound.playSound()).start();
+    			    if (toggle) {
+    			    	mainSound.stopSound();	
+    			    }else {
+    			    	new Thread(() -> mainSound.playSound()).start();
+    			    }
+    			    toggle = !toggle;
                 });
 
                 // 어두운 배경 패널에 버튼 추가
@@ -104,7 +118,7 @@ public class OptionPane {
     // 하트 이미지를 동적으로 변경하는 메서드
     public void updateHeart(int index) {
         if (index >= 0 && index < heartLabels.length) {
-            heartLabels[index].setIcon(new ImageIcon(dBasePath + "19.png"));
+            heartLabels[index].setIcon(new ImageIcon(dBasePath + "24.png"));
             layeredPane.repaint(); // 변경 사항 반영
         }
     }
