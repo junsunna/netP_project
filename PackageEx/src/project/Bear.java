@@ -46,7 +46,8 @@ public class Bear implements Moveable{
 	private int heart;
 	private final int SPEED = 6;
 	private final int JUMPSPEED = 1;
-    
+	private ClientGUI clientGUI;
+	
     private JLabel character;
     private Map<Integer, JLabel> bulletTiles;
     private ArrayList<ImageIcon> i_rightMove; // 오른쪽 이동
@@ -84,8 +85,9 @@ public class Bear implements Moveable{
     int screenCenterX = panelWidth / 2;
 	int mapX = 0; // 맵의 X 좌표
 	
-    public Bear(MainMap mainMap, OptionPane o_pane) {
+    public Bear(MainMap mainMap, OptionPane o_pane, ClientGUI clientGUI) {
     	this.position = new Point(10, 400);
+    	this.clientGUI = clientGUI; // 저장
     	character = new JLabel(); // JLabel 초기화
 	    character.setBounds(position.x, position.y, charWidth, charHeight); // 초기 위치 설정
     	loadMoveImage();
@@ -273,24 +275,6 @@ public class Bear implements Moveable{
     	character.setBounds(position.x, position.y, 150, 100); // 캐릭터 위치 설정
     }
     
-	private void updateMap() {
-	    // 캐릭터의 현재 위치
-	    int characterX = position.x;
-	    // mapX는 맵의 위치를 나타내므로, 화면의 중앙으로 맞추기 위해 캐릭터 위치를 기준으로 이동
-	    if (characterX > screenCenterX && mapX > -(mapWidth - panelWidth) && mapX > -(mapWidth - screenCenterX - 20)) {
-	        // 캐릭터가 중앙을 넘어가면 맵을 오른쪽으로 이동
-	    	screenCenterX += SPEED;
-	        mapX -= SPEED;  // 맵을 오른쪽으로 5픽셀 이동
-	    } else if (characterX < screenCenterX && mapX < 0) {
-	        // 캐릭터가 중앙을 넘어가면 맵을 왼쪽으로 이동
-	        mapX += SPEED;  // 맵을 왼쪽으로 5픽셀 이동
-	    	screenCenterX -= SPEED;
-	    }
-
-	    // 맵의 위치 업데이트
-	    m_map.setLocation(mapX, 0);
-	}
-    
     private boolean upCharacter() {
         position.y -= JUMPSPEED; // 위로 이동
         
@@ -431,7 +415,7 @@ public class Bear implements Moveable{
 			    	if (!moveCharacter(-SPEED)) {
 			    		position.x = position.x + SPEED;
 			    	} else if (player){
-						updateMap();
+			    		clientGUI.requestMapUpdate();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {
@@ -466,7 +450,7 @@ public class Bear implements Moveable{
 			    	if (!moveCharacter(SPEED)) {
 			    		position.x = position.x - SPEED;
 			    	} else if (player){
-						updateMap();
+			    		clientGUI.requestMapUpdate();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down) {

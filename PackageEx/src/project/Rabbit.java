@@ -39,7 +39,7 @@ public class Rabbit implements Moveable{
 	boolean loop = false;
 	boolean player = false;
 	boolean push = false;
-
+	private ClientGUI clientGUI;
 	private final int SPEED = 6;
 	private final int JUMPSPEED = 1;
 	private int heart;
@@ -89,7 +89,7 @@ public class Rabbit implements Moveable{
 	int newWidth = 190;
     int newHeight= 190;
 	
-    public Rabbit(MainMap mainMap, OptionPane o_pane) {
+    public Rabbit(MainMap mainMap, OptionPane o_pane, ClientGUI clientGUI) {
     	this.mainMap = mainMap;
     	m_map = mainMap.getMainMap();
     	platforms = mainMap.getPlatforms();
@@ -97,7 +97,7 @@ public class Rabbit implements Moveable{
     	character = new JLabel(); // JLabel 초기화
 	    character.setBounds(position.x, position.y, newWidth, newHeight); // 초기 위치 설정
     	loadMoveImage();
-
+    	this.clientGUI = clientGUI; // 저장
     	this.o_pane = o_pane;
     	heart = 3;
     	direction = Direction.RIGHT;
@@ -318,23 +318,6 @@ public class Rabbit implements Moveable{
 //        gamePanel.scrollRectToVisible(new Rectangle(mapOffsetX, 0, screenWidth, 700)); // 화면 스크롤 동기화
 //        gamePanel.repaint(); // 패널 다시 그리기
     }
-	private void updateMap() {
-	    // 캐릭터의 현재 위치
-	    int characterX = position.x;
-	    // mapX는 맵의 위치를 나타내므로, 화면의 중앙으로 맞추기 위해 캐릭터 위치를 기준으로 이동
-	    if (characterX > screenCenterX && mapX > -(mapWidth - panelWidth) && mapX > -(mapWidth - screenCenterX - 20)) {
-	        // 캐릭터가 중앙을 넘어가면 맵을 오른쪽으로 이동
-	    	screenCenterX += SPEED;
-	        mapX -= SPEED;  // 맵을 오른쪽으로 5픽셀 이동
-	    } else if (characterX < screenCenterX && mapX < 0) {
-	        // 캐릭터가 중앙을 넘어가면 맵을 왼쪽으로 이동
-	        mapX += SPEED;  // 맵을 왼쪽으로 5픽셀 이동
-	    	screenCenterX -= SPEED;
-	    }
-
-	    // 맵의 위치 업데이트
-	    m_map.setLocation(mapX, 0);
-	}
 	
     private void checkBullet() {
         bulletTiles = mainMap.getBullet();
@@ -476,7 +459,7 @@ public class Rabbit implements Moveable{
 			    	if (!moveCharacter(-SPEED)) {
 			    		position.x = position.x + SPEED;
 			    	} else if (player){
-						updateMap();
+			    		clientGUI.requestMapUpdate();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down && !push) {
@@ -511,7 +494,7 @@ public class Rabbit implements Moveable{
 			    	if (!moveCharacter(SPEED)) {
 			    		position.x = position.x - SPEED;
 			    	} else if (player){
-						updateMap();
+			    		clientGUI.requestMapUpdate();
 			    	}
 					updateCharacterPosition();
 					if (!up && !down && !push) {
@@ -730,7 +713,7 @@ public class Rabbit implements Moveable{
 		                    if (!upCharacter() && moveCharacter(SPEED)) { // 호출 추가
 		                    	updateCharacterPosition();
 								if (player){
-									updateMap();
+									clientGUI.requestMapUpdate();
 						    	}
 								rightThrowIndex = (rightThrowIndex + 1) % i_rightThrow.size();
 								character.setIcon(i_rightThrow.get(rightThrowIndex));
@@ -760,7 +743,7 @@ public class Rabbit implements Moveable{
 				    	
 						if (delay % 4 == 0) {
 							if (player){
-								updateMap();
+								clientGUI.requestMapUpdate();
 					    	}
 				        	
 						}
@@ -780,7 +763,7 @@ public class Rabbit implements Moveable{
 		                    	updateCharacterPosition();
 								if (i % 4 == 0) {
 									if (player){
-										updateMap();
+										clientGUI.requestMapUpdate();
 							    	}
 									leftThrowIndex = (leftThrowIndex + 1) % i_leftThrow.size();
 						        	character.setIcon(i_leftThrow.get(leftThrowIndex));
@@ -811,7 +794,7 @@ public class Rabbit implements Moveable{
 						
 						if (delay % 4 == 0) {
 							if (player){
-								updateMap();
+								clientGUI.requestMapUpdate();
 					    	}
 						}
 						updateCharacterPosition();
